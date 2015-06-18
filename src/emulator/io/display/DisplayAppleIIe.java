@@ -794,9 +794,50 @@ public class DisplayAppleIIe extends DisplayWindow {
 		0x00, 0x2a, 0x14, 0x2a, 0x14, 0x2a, 0x00, 0x00
 
 	};
+
+	static final int HGR_TO_DHGR[] = new int[] {
+		0x0000,	0x0003,	0x000c,	0x000f,	0x0030,	0x0033,	0x003c,	0x003f,
+		0x00c0,	0x00c3,	0x00cc,	0x00cf,	0x00f0,	0x00f3,	0x00fc,	0x00ff,
+		0x0300,	0x0303,	0x030c,	0x030f,	0x0330,	0x0333,	0x033c,	0x033f,
+		0x03c0,	0x03c3,	0x03cc,	0x03cf,	0x03f0,	0x03f3,	0x03fc,	0x03ff,
+		0x0c00,	0x0c03,	0x0c0c,	0x0c0f,	0x0c30,	0x0c33,	0x0c3c,	0x0c3f,
+		0x0cc0,	0x0cc3,	0x0ccc,	0x0ccf,	0x0cf0,	0x0cf3,	0x0cfc,	0x0cff,
+		0x0f00,	0x0f03,	0x0f0c,	0x0f0f,	0x0f30,	0x0f33,	0x0f3c,	0x0f3f,
+		0x0fc0,	0x0fc3,	0x0fcc,	0x0fcf,	0x0ff0,	0x0ff3,	0x0ffc,	0x0fff,
+		0x3000,	0x3003,	0x300c,	0x300f,	0x3030,	0x3033,	0x303c,	0x303f,
+		0x30c0,	0x30c3,	0x30cc,	0x30cf,	0x30f0,	0x30f3,	0x30fc,	0x30ff,
+		0x3300,	0x3303,	0x330c,	0x330f,	0x3330,	0x3333,	0x333c,	0x333f,
+		0x33c0,	0x33c3,	0x33cc,	0x33cf,	0x33f0,	0x33f3,	0x33fc,	0x33ff,
+		0x3c00,	0x3c03,	0x3c0c,	0x3c0f,	0x3c30,	0x3c33,	0x3c3c,	0x3c3f,
+		0x3cc0,	0x3cc3,	0x3ccc,	0x3ccf,	0x3cf0,	0x3cf3,	0x3cfc,	0x3cff,
+		0x3f00,	0x3f03,	0x3f0c,	0x3f0f,	0x3f30,	0x3f33,	0x3f3c,	0x3f3f,
+		0x3fc0,	0x3fc3,	0x3fcc,	0x3fcf,	0x3ff0,	0x3ff3,	0x3ffc,	0x3fff
+	};
 	
+	static final int GR_TO_DHGR[] = new int[] {
+		0x0000, 0x0000,
+		0x1111, 0x0444,
+		0x2222, 0x0888,
+		0x3333, 0x0ccc,
+		0x0444, 0x1111,
+		0x1555, 0x1555,
+		0x2666, 0x1999,
+		0x3777, 0x1ddd,
+		0x0888, 0x2222,
+		0x1999, 0x2666,
+		0x2aaa, 0x2aaa,
+		0x3bbb, 0x2eee,
+		0x0ccc, 0x3333,
+		0x1ddd, 0x3777,
+		0x2eee, 0x3bbb,
+		0x3fff, 0x3fff
+	};
+
 	private static final int XSIZE = 567;
 	private static final int YSIZE = 384;
+	private static final int XOFF = (640-XSIZE)>>1;
+	private static final int YOFF = (480-YSIZE)>>1;
+	
 	
 	public DisplayAppleIIe(MemoryBusAppleIIe memory, KeyboardIIe keyboard, long unitsPerCycle) {
 		super(memory, unitsPerCycle);
@@ -808,9 +849,10 @@ public class DisplayAppleIIe extends DisplayWindow {
 			}        
 		});    
 		frame.add(canvas);
+		canvas.setBackground(Color.BLACK);
 		frame.setVisible(true);  
 		frame.requestFocusInWindow();
-		frame.setSize(XSIZE, YSIZE+frame.getInsets().top);
+		frame.setSize(XSIZE+(XOFF<<1), YSIZE+(YOFF<<1)+frame.getInsets().top);
 		frame.addKeyListener(keyboard);
 		canvas.repaint();
 	}
@@ -827,16 +869,101 @@ public class DisplayAppleIIe extends DisplayWindow {
 			setSize(XSIZE, YSIZE);
 		}
 	
-		public void paint( Graphics g ){
+		int flashToggle = 0;
+		public void paint( Graphics g ) {
 
-			for( int y = 0; y < 24; y++ )
+			flashToggle++;
+			int page = ((MemoryBusAppleIIe)memory).isPage2()&&!((MemoryBusAppleIIe)memory).is80Store() ? 2:1;
+			int textMod = ((MemoryBusAppleIIe) memory).isAltCharSet() ? 2 : (flashToggle&0x10)!=0 ? 1:0;
+			for( int y = 0; y < 24*16; y++ ) {
+				for( int x = 0; x < 7; x++ )
+					rawDisplay.setRGB(x, y, 0);
+				for( int x = 80*7; x < 81*7; x++ )
+					rawDisplay.setRGB(x, y, 0);
+			}
+			for( int y = 0; y < 24; y++ ) {
+				if( !((MemoryBusAppleIIe) memory).isText() && ((MemoryBusAppleIIe) memory).isHiRes() &&
+						((MemoryBusAppleIIe) memory).is80Col() && !((MemoryBusAppleIIe) memory).isAn3() && 
+						!(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
+					for( int x = 0; x < 80; x++ ) {
+						for( int yc = 0; yc < 16; yc+=2 ) {
+							for( int xc = 0; xc < 14; xc++ ) {
+								int readValue = memory.getMemory().getByte(((x&0x01)==0?0x10000:0)|getAddressHi40(page, (y<<3)+(yc>>1), x>>1));
+								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc,
+										(readValue&(0x01<<xc))!=0 ?
+												Color.WHITE.getRGB() : Color.BLACK.getRGB());
+								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc+1,
+										(readValue&(0x01<<xc))!=0 ?
+												Color.GRAY.getRGB() : Color.BLACK.getRGB());
+							}
+						}
+					}
+				} else if( !((MemoryBusAppleIIe) memory).isText() && ((MemoryBusAppleIIe) memory).isHiRes() && !(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
+					for( int x = 0; x < 40; x++ ) {
+						for( int yc = 0; yc < 16; yc+=2 ) {
+							int readValue = memory.getMemory().getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
+							for( int xc = 0; xc < 14; xc++ ) {
+								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
+										(HGR_TO_DHGR[readValue&0x7f]&(0x01<<xc))!=0 ?
+												Color.WHITE.getRGB() : Color.BLACK.getRGB());
+								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
+										(HGR_TO_DHGR[readValue&0x7f]&(0x01<<xc))!=0 ?
+												Color.GRAY.getRGB() : Color.BLACK.getRGB());
+							}
+						}
+					}
+				} else if( !((MemoryBusAppleIIe) memory).isText() && !(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
+					for( int x = 0; x < 40; x++ ) {
+						int readValue = memory.getMemory().getByte(getAddressLo40(page, y, x));
+						for( int yc = 0; yc < 16; yc+=2 ) {
+							int plotValue;
+							if( yc>=8 )
+								plotValue = readValue>>4;
+							else
+								plotValue = readValue&0x0f;
+							for( int xc = 0; xc < 14; xc++ ) {
+								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
+										(GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]&(0x01<<xc))!=0 ?
+												Color.WHITE.getRGB() : Color.BLACK.getRGB());
+								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
+										(GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]&(0x01<<xc))!=0 ?
+												Color.GRAY.getRGB() : Color.BLACK.getRGB());
+							}
+						}
+					}
+					for( int x = 0; x < 7; x++ )
+						rawDisplay.setRGB(x, y, 0);
+				} else if( ((MemoryBusAppleIIe) memory).is80Col() ) {
+					for( int x = 0; x < 80; x++ ) {
+						int readValue = (x&0x01)!=0 ?
+								memory.getMemory().getByte(getAddressLo40(page, y, x>>1)) :
+									memory.getMemory().getByte(0x10000|getAddressLo40(page, y, x>>1));
+						for( int yc = 0; yc < 16; yc+=2 )
+							for( int xc = 0; xc < 7; xc++ ) {
+								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc,
+										(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc)))!=0 ?
+												Color.WHITE.getRGB() : Color.BLACK.getRGB());
+								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc+1,
+										(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc)))!=0 ?
+												Color.GRAY.getRGB() : Color.BLACK.getRGB());
+							}
+					}
+				} else {
 				for( int x = 0; x < 40; x++ ) {
-					int readValue = memory.getByte( getAddressLo40(((MemoryBusAppleIIe)memory).isPage2() ? 2:1, y, x));
-					for( int yc = 0; yc < 16; yc++ )
-						for( int xc = 0; xc < 14; xc++ )
-							rawDisplay.setRGB((x*14)+xc, (y<<4)+yc, (TEXT_DISPLAY[readValue*8+(yc>>1)]&(0x01<<(xc>>1)))!=0 ? Color.WHITE.getRGB() : Color.BLACK.getRGB());
+					int readValue = memory.getMemory().getByte(getAddressLo40(page, y, x));
+					for( int yc = 0; yc < 16; yc+=2 )
+						for( int xc = 0; xc < 14; xc++ ) {
+							rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
+									(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc>>1)))!=0 ?
+											Color.WHITE.getRGB() : Color.BLACK.getRGB());
+							rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
+									(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc>>1)))!=0 ?
+											Color.GRAY.getRGB() : Color.BLACK.getRGB());
+						}
+					}
 				}
-			g.drawImage(rawDisplay, 0, 0, this);
+			}
+			g.drawImage(rawDisplay, XOFF, YOFF, this);
 
 		}
 	
