@@ -53,7 +53,7 @@ public class Display32x32 extends DisplayWindow {
 		public void paint( Graphics g ){
 			for( int y = 0; y < YSIZE; y++ )
 				for( int x = 0; x < XSIZE; x++ )
-					rawDisplay.setRGB(x, y, pal[0x0f&memory.getByte(getAddressLo(y/PIXEL_MULT, x/PIXEL_MULT))]);
+					rawDisplay.setRGB(x, y, pal[0x0f&memoryBus.getByte(getAddressLo(y/PIXEL_MULT, x/PIXEL_MULT))]);
 			g.drawImage(rawDisplay, 0, 0, this);
 		}
 	
@@ -61,9 +61,11 @@ public class Display32x32 extends DisplayWindow {
 	
 	private Frame frame;
 	private Canvas32x32 canvas;
+	private MemoryBus8 memoryBus;
 	
-	public Display32x32(MemoryBus8 memory, KeyboardIIe keyboard, long unitsPerCycle) {
-		super(memory, unitsPerCycle);
+	public Display32x32(MemoryBus8 memoryBus, KeyboardIIe keyboard, long unitsPerCycle) {
+		super(unitsPerCycle);
+		this.memoryBus = memoryBus;
 		canvas = new Canvas32x32();
 		frame = new Frame("32x32x16@0200h 65C02 Emulator");
 		frame.addWindowListener(new WindowAdapter() {
@@ -87,6 +89,14 @@ public class Display32x32 extends DisplayWindow {
 	public static int getAddressLo( int scanline, int offset )
 	{
 		return 0x0200+(scanline<<5)+offset;
+	}
+
+	@Override
+	public void coldRestart() throws HardwareException {
+	}
+
+	@Override
+	public void warmRestart() throws HardwareException {
 	}
 
 }

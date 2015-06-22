@@ -1,18 +1,15 @@
 package emulator.io.display;
 
 import core.exception.HardwareException;
-import core.memory.memory8.MemoryBus8;
 import emulator.HardwareManager;
 
 public abstract class DisplayConsole extends HardwareManager {
 
-	protected MemoryBus8 memory;
 	Long timer;
 	Double fpsAvg;
 	
-	public DisplayConsole( MemoryBus8 memory, long unitsPerCycle ) {
+	public DisplayConsole( long unitsPerCycle ) {
 		super(unitsPerCycle);
-		this.memory = memory;
 	}
 	
 	protected void showFps(){

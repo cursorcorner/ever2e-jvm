@@ -35,6 +35,8 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 	private SwitchState switchAn2;
 	private SwitchState switchAn3;
 
+	private int switchIteration;
+
 	public class SwitchState {
 		
 		private boolean state = false;
@@ -782,7 +784,13 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 		// C000h I/O switches
 		// See Sather 2-13
 		//SwitchIIe nullSwitch = new SwitchReadOnlyIIe(new SwitchState());
-		ioSwitches = new MemoryBlock8(0xc000, 0xc0ff, 0);
+		ioSwitches = new MemoryBlock8(0xc000, 0xc0ff, 0) {
+			@Override
+			public void writeMem(int address, int value) {
+				switchIteration++;
+				super.writeMem(address, value);
+			}
+		};
 		MemoryBlock8 ioSwitchesOuter = new MemoryBlock8(0xc000, 0xc0ff, 256) {
 			public int readMem(int address) {
 				System.out.println("R-"+Integer.toHexString(address).toUpperCase());
@@ -920,6 +928,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switch80Store.setState();
 		else
 			this.switch80Store.resetState();
+		switchIteration++;
 	}
 
 	public boolean isHiRes() {
@@ -931,6 +940,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchHiRes.setState();
 		else
 			this.switchHiRes.resetState();
+		switchIteration++;
 	}
 
 	public boolean isRamRead() {
@@ -942,6 +952,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchRamRead.setState();
 		else
 			this.switchRamRead.resetState();
+		switchIteration++;
 	}
 
 	public boolean isRamWrt() {
@@ -953,6 +964,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchRamWrt.setState();
 		else
 			this.switchRamWrt.resetState();
+		switchIteration++;
 	}
 
 	public boolean isText() {
@@ -964,6 +976,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchText.setState();
 		else
 			this.switchText.resetState();
+		switchIteration++;
 	}
 
 	public boolean isPage2() {
@@ -975,6 +988,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchPage2.setState();
 		else
 			this.switchPage2.resetState();
+		switchIteration++;
 	}
 
 	public boolean isMixed() {
@@ -986,6 +1000,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchMixed.setState();
 		else
 			this.switchMixed.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAltZp() {
@@ -997,6 +1012,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAltZp.setState();
 		else
 			this.switchAltZp.resetState();
+		switchIteration++;
 	}
 
 	public boolean isBank1() {
@@ -1008,6 +1024,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchBank1.setState();
 		else
 			this.switchBank1.resetState();
+		switchIteration++;
 	}
 
 	public boolean isHRamRd() {
@@ -1019,6 +1036,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchHRamRd.setState();
 		else
 			this.switchHRamRd.resetState();
+		switchIteration++;
 	}
 
 	public boolean isHRamWrt() {
@@ -1030,6 +1048,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchHRamWrt.setState();
 		else
 			this.switchHRamWrt.resetState();
+		switchIteration++;
 	}
 
 	public boolean isPreWrite() {
@@ -1041,6 +1060,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchPreWrite.setState();
 		else
 			this.switchPreWrite.resetState();
+		switchIteration++;
 	}
 
 	public boolean isIntCxRom() {
@@ -1052,6 +1072,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchIntCxRom.setState();
 		else
 			this.switchIntCxRom.resetState();
+		switchIteration++;
 	}
 
 	public boolean isSlotC3Rom() {
@@ -1063,6 +1084,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchSlotC3Rom.setState();
 		else
 			this.switchSlotC3Rom.resetState();
+		switchIteration++;
 	}
 
 	public boolean isIntC8Rom() {
@@ -1074,6 +1096,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchIntC8Rom.setState();
 		else
 			this.switchIntC8Rom.resetState();
+		switchIteration++;
 	}
 
 	public boolean is80Col() {
@@ -1085,6 +1108,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switch80Col.setState();
 		else
 			this.switch80Col.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAltCharSet() {
@@ -1096,6 +1120,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAltCharSet.setState();
 		else
 			this.switchAltCharSet.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAn0() {
@@ -1107,6 +1132,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAn0.setState();
 		else
 			this.switchAn0.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAn1() {
@@ -1118,6 +1144,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAn1.setState();
 		else
 			this.switchAn1.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAn2() {
@@ -1129,6 +1156,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAn2.setState();
 		else
 			this.switchAn2.resetState();
+		switchIteration++;
 	}
 
 	public boolean isAn3() {
@@ -1140,6 +1168,11 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAn3.setState();
 		else
 			this.switchAn3.resetState();
+		switchIteration++;
+	}
+
+	public int getSwitchIteration() {
+		return switchIteration;
 	}
 
 /*	

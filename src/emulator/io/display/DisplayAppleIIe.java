@@ -2,17 +2,57 @@ package emulator.io.display;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 
 import core.exception.HardwareException;
+import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBusAppleIIe;
 import emulator.io.keyboard.KeyboardIIe;
 
 public class DisplayAppleIIe extends DisplayWindow {
+
+	private Frame frame;
+	private Canvas32x32 canvas;
+	private MemoryBusAppleIIe memoryBus;
+	private Memory8 memory;
+
+	private int textMod;
+	private boolean mixedMode;
+	private DisplayType displayType;
+	private DisplayType displayTypeTop;
+	private DisplayType displayTypeBottom;
+	private BufferedImage [] rawDisplay;
+
+	private int xOff = (640-XSIZE)>>1;
+	private int yOff = (480-YSIZE)>>1;
+
+	private int bufferPage;
+	private int paintPage;
+	private int colorWord;  
+	private int flashToggle = 0;
+	private int offset40 = 0;
+	private int colorWordSize;
+	private int shiftBit;
+	private int lastSwitchIteration;
+	private int page;
+	private int xPos;
+	private int[] pal;
+	private int hueShift = -32;
+
+	private static final int COLOR_BLACK = Color.BLACK.getRGB();
+	private static final int COLOR_WHITE = Color.WHITE.getRGB();
+	private static final int COLOR_GRAY_50 = Color.GRAY.getRGB();
+	private static final int PAL_BRIGHTNESS = 160;
+	private static final int OFFSET40 = 7;
+
+	private static final int XSIZE = 567;
+	private static final int YSIZE = 384;
 
 	private static final byte[] TEXT_DISPLAY = {
 
@@ -795,7 +835,7 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 	};
 
-	static final int HGR_TO_DHGR[] = new int[] {
+	private static final int HGR_TO_DHGR[] = new int[] {
 		0x0000,	0x0003,	0x000c,	0x000f,	0x0030,	0x0033,	0x003c,	0x003f,
 		0x00c0,	0x00c3,	0x00cc,	0x00cf,	0x00f0,	0x00f3,	0x00fc,	0x00ff,
 		0x0300,	0x0303,	0x030c,	0x030f,	0x0330,	0x0333,	0x033c,	0x033f,
@@ -814,7 +854,7 @@ public class DisplayAppleIIe extends DisplayWindow {
 		0x3fc0,	0x3fc3,	0x3fcc,	0x3fcf,	0x3ff0,	0x3ff3,	0x3ffc,	0x3fff
 	};
 	
-	static final int GR_TO_DHGR[] = new int[] {
+	private static final int GR_TO_DHGR[] = new int[] {
 		0x0000, 0x0000,
 		0x1111, 0x0444,
 		0x2222, 0x0888,
@@ -833,26 +873,34 @@ public class DisplayAppleIIe extends DisplayWindow {
 		0x3fff, 0x3fff
 	};
 
-	private static final int XSIZE = 567;
-	private static final int YSIZE = 384;
-	private static final int XOFF = (640-XSIZE)>>1;
-	private static final int YOFF = (480-YSIZE)>>1;
+	private enum DisplayType {
+		TEXT40,
+		TEXT80,
+		LORES40,
+		LORES40M,
+		LORES80,
+		HIRES40,
+		HIRES40M,
+		HIRES80
+	}
 	
-	
-	public DisplayAppleIIe(MemoryBusAppleIIe memory, KeyboardIIe keyboard, long unitsPerCycle) {
-		super(memory, unitsPerCycle);
+	public DisplayAppleIIe(MemoryBusAppleIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
+		super(unitsPerCycle);
+		this.memoryBus = memoryBus;
+		this.memory = memoryBus.getMemory();
+		coldRestart();
 		canvas = new Canvas32x32();
 		frame = new Frame("Ever2E");
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent){
 				System.exit(0);
-			}        
-		});    
+			}
+		});
 		frame.add(canvas);
 		canvas.setBackground(Color.BLACK);
 		frame.setVisible(true);  
-		frame.requestFocusInWindow();
-		frame.setSize(XSIZE+(XOFF<<1), YSIZE+(YOFF<<1)+frame.getInsets().top);
+//TODO:		frame.requestFocusInWindow();
+		frame.setSize(XSIZE+(xOff<<1), YSIZE+(yOff<<1)+frame.getInsets().top);
 		frame.addKeyListener(keyboard);
 		canvas.repaint();
 	}
@@ -860,122 +908,257 @@ public class DisplayAppleIIe extends DisplayWindow {
 	private class Canvas32x32 extends Canvas {
 		
 		private static final long serialVersionUID = 3277512952021171260L;
-
-		BufferedImage rawDisplay;
 		
 		public Canvas32x32() {
 			super();
-			rawDisplay = new BufferedImage(XSIZE, YSIZE, BufferedImage.TYPE_INT_RGB);
 			setSize(XSIZE, YSIZE);
+			evaluateSwitchChange();
 		}
-	
-		int flashToggle = 0;
+
 		public void paint( Graphics g ) {
-
-			flashToggle++;
-			int page = ((MemoryBusAppleIIe)memory).isPage2()&&!((MemoryBusAppleIIe)memory).is80Store() ? 2:1;
-			int textMod = ((MemoryBusAppleIIe) memory).isAltCharSet() ? 2 : (flashToggle&0x10)!=0 ? 1:0;
-			for( int y = 0; y < 24*16; y++ ) {
-				for( int x = 0; x < 7; x++ )
-					rawDisplay.setRGB(x, y, 0);
-				for( int x = 80*7; x < 81*7; x++ )
-					rawDisplay.setRGB(x, y, 0);
-			}
-			for( int y = 0; y < 24; y++ ) {
-				if( !((MemoryBusAppleIIe) memory).isText() && ((MemoryBusAppleIIe) memory).isHiRes() &&
-						((MemoryBusAppleIIe) memory).is80Col() && !((MemoryBusAppleIIe) memory).isAn3() && 
-						!(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
-					for( int x = 0; x < 80; x++ ) {
-						for( int yc = 0; yc < 16; yc+=2 ) {
-							for( int xc = 0; xc < 14; xc++ ) {
-								int readValue = memory.getMemory().getByte(((x&0x01)==0?0x10000:0)|getAddressHi40(page, (y<<3)+(yc>>1), x>>1));
-								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc,
-										(readValue&(0x01<<xc))!=0 ?
-												Color.WHITE.getRGB() : Color.BLACK.getRGB());
-								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc+1,
-										(readValue&(0x01<<xc))!=0 ?
-												Color.GRAY.getRGB() : Color.BLACK.getRGB());
-							}
-						}
-					}
-				} else if( !((MemoryBusAppleIIe) memory).isText() && ((MemoryBusAppleIIe) memory).isHiRes() && !(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
-					for( int x = 0; x < 40; x++ ) {
-						for( int yc = 0; yc < 16; yc+=2 ) {
-							int readValue = memory.getMemory().getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
-							for( int xc = 0; xc < 14; xc++ ) {
-								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
-										(HGR_TO_DHGR[readValue&0x7f]&(0x01<<xc))!=0 ?
-												Color.WHITE.getRGB() : Color.BLACK.getRGB());
-								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
-										(HGR_TO_DHGR[readValue&0x7f]&(0x01<<xc))!=0 ?
-												Color.GRAY.getRGB() : Color.BLACK.getRGB());
-							}
-						}
-					}
-				} else if( !((MemoryBusAppleIIe) memory).isText() && !(y>=20 && ((MemoryBusAppleIIe) memory).isMixed()) ) {
-					for( int x = 0; x < 40; x++ ) {
-						int readValue = memory.getMemory().getByte(getAddressLo40(page, y, x));
-						for( int yc = 0; yc < 16; yc+=2 ) {
-							int plotValue;
-							if( yc>=8 )
-								plotValue = readValue>>4;
-							else
-								plotValue = readValue&0x0f;
-							for( int xc = 0; xc < 14; xc++ ) {
-								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
-										(GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]&(0x01<<xc))!=0 ?
-												Color.WHITE.getRGB() : Color.BLACK.getRGB());
-								rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
-										(GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]&(0x01<<xc))!=0 ?
-												Color.GRAY.getRGB() : Color.BLACK.getRGB());
-							}
-						}
-					}
-					for( int x = 0; x < 7; x++ )
-						rawDisplay.setRGB(x, y, 0);
-				} else if( ((MemoryBusAppleIIe) memory).is80Col() ) {
-					for( int x = 0; x < 80; x++ ) {
-						int readValue = (x&0x01)!=0 ?
-								memory.getMemory().getByte(getAddressLo40(page, y, x>>1)) :
-									memory.getMemory().getByte(0x10000|getAddressLo40(page, y, x>>1));
-						for( int yc = 0; yc < 16; yc+=2 )
-							for( int xc = 0; xc < 7; xc++ ) {
-								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc,
-										(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc)))!=0 ?
-												Color.WHITE.getRGB() : Color.BLACK.getRGB());
-								rawDisplay.setRGB((x*7)+xc, (y<<4)+yc+1,
-										(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc)))!=0 ?
-												Color.GRAY.getRGB() : Color.BLACK.getRGB());
-							}
-					}
-				} else {
-				for( int x = 0; x < 40; x++ ) {
-					int readValue = memory.getMemory().getByte(getAddressLo40(page, y, x));
-					for( int yc = 0; yc < 16; yc+=2 )
-						for( int xc = 0; xc < 14; xc++ ) {
-							rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc,
-									(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc>>1)))!=0 ?
-											Color.WHITE.getRGB() : Color.BLACK.getRGB());
-							rawDisplay.setRGB((x*14)+xc+7, (y<<4)+yc+1,
-									(TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]&(0x01<<(xc>>1)))!=0 ?
-											Color.GRAY.getRGB() : Color.BLACK.getRGB());
-						}
-					}
-				}
-			}
-			g.drawImage(rawDisplay, XOFF, YOFF, this);
-
+			Dimension size = getSize();
+			xOff = (size.width-XSIZE)>>1;
+			yOff = (size.height-YSIZE)>>1;
+			g.drawImage(rawDisplay[paintPage], xOff, yOff, this);
 		}
 	
 	}
 	
-	private Frame frame;
-	private Canvas32x32 canvas;
+	private void evaluateSwitchChange() {
+		
+		if( memoryBus.isAltCharSet() )
+			textMod = 2;
+		else if( (flashToggle&0x10)!=0 )
+			textMod = 1;
+		else
+			textMod = 0;
+
+		if( memoryBus.is80Col() )
+			displayTypeBottom = DisplayType.TEXT80;
+		else
+			displayTypeBottom = DisplayType.TEXT40;
+				 
+		if( !memoryBus.isText() && memoryBus.isHiRes() &&
+				memoryBus.is80Col() && !memoryBus.isAn3() )
+			displayTypeTop = DisplayType.HIRES80;
+		else if( !memoryBus.isText() && memoryBus.isHiRes() )
+			displayTypeTop = DisplayType.HIRES40;
+		else if( !memoryBus.isText() )
+			displayTypeTop = DisplayType.LORES40;
+		else
+			displayTypeTop = displayTypeBottom;
+
+		mixedMode = memoryBus.isMixed();
+		if( !mixedMode )
+			displayType = displayTypeTop;
+		else
+/*				if( scanLine==0x0140 ) 
+				displayType = displayTypeBottom;
+			else if( scanLine==0x0000 )
+				displayType = displayTypeTop;
+*/
+			displayType = displayTypeTop;
+		
+		if( displayType==DisplayType.HIRES80 ||
+				displayType==DisplayType.LORES80 ||
+				displayType==DisplayType.TEXT80 ) {
+			colorWordSize -= offset40;
+			offset40 = 0;
+		}
+		else {
+			colorWordSize += OFFSET40 - offset40;
+			offset40 = OFFSET40;
+		}
+
+		page = memoryBus.isPage2()&&!memoryBus.is80Store() ? 2:1;
+
+	}
+	
 	
 	@Override
 	public void cycle() throws HardwareException {
+		
 		incSleepCycles(1);
+
+		if( textMod<2 && (flashToggle^(++flashToggle)&0x10)!=0 )
+			textMod |= (flashToggle&0x10)!=0 ? 1:0;
+
+		// TODO - cycles should be altered to sync with cpu
+		for( int scanLine = 0; scanLine < 384; scanLine+=2 ) {
+
+			int y = scanLine>>4;
+			int yc = scanLine&0x0f;
+			int gfxWord = 0;
+			
+			for( int x = 0; x < 40; x++ ) {
+				
+				if( x==0 ) {
+					
+					xPos = 0;
+					colorWord = 0;
+					colorWordSize = offset40;
+					shiftBit = 0;
+					if( mixedMode ) {
+						if( scanLine==0x0140 ) 
+							displayType = displayTypeBottom;
+						else if( scanLine==0x0000 ) {
+							flipPage();
+							cleanEdges();
+							displayType = displayTypeTop;
+						}
+						if( displayType==DisplayType.HIRES80 ||
+								displayType==DisplayType.LORES80 ||
+								displayType==DisplayType.TEXT80 ) {
+							colorWordSize -= offset40;
+							offset40 = 0;
+						}
+						else {
+							colorWordSize += OFFSET40 - offset40;
+							offset40 = OFFSET40;
+						}
+					} else if( scanLine==0x0000 ) {
+						flipPage();
+						cleanEdges();
+					}
+
+				}
+					
+				int switchIteration = memoryBus.getSwitchIteration();
+				if( lastSwitchIteration!=switchIteration ) {
+					lastSwitchIteration = switchIteration;
+					evaluateSwitchChange();
+				}
+
+				switch( displayType ) {
+				
+				case HIRES40:
+					int readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
+					gfxWord = HGR_TO_DHGR[readValue&0x7f];
+					if( (readValue&0x80)!=0 ) {
+						gfxWord <<= 1;
+						gfxWord |= shiftBit;
+					}
+					if( (gfxWord&0x2000)!=0 )
+						shiftBit = 1;
+					else
+						shiftBit = 0;
+					break;
+					
+				case HIRES40M:
+					readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
+					gfxWord = HGR_TO_DHGR[readValue&0x7f];
+					break;
+					
+				case HIRES80:
+					int address = getAddressHi40(page, (y<<3)+(yc>>1), x);
+					readValue = memory.getByte(0x10000|address);
+					gfxWord = readValue;
+					readValue = memory.getByte(address);
+					gfxWord |= readValue<<7;
+					break;
+					
+				case LORES40:
+					readValue = memory.getByte(getAddressLo40(page, y, x));
+					int plotValue;
+					if( yc>=8 )
+						plotValue = readValue>>4;
+					else
+						plotValue = readValue&0x0f;
+					gfxWord = GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)];
+					break;
+					
+				case LORES40M:
+					readValue = memory.getByte(getAddressLo40(page, y, x));
+					if( yc>=8 )
+						plotValue = readValue>>4;
+					else
+						plotValue = readValue&0x0f;
+					gfxWord = HGR_TO_DHGR[0x7f&GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]];
+					break;
+					
+				case LORES80:
+					// TODO
+					gfxWord = 0xaaaa;
+					break;
+					
+				case TEXT40:
+					readValue = memory.getByte(getAddressLo40(page, y, x));
+					gfxWord = HGR_TO_DHGR[TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]];
+					break;
+					
+				case TEXT80:
+					address = getAddressLo40(page, y, x);
+					readValue = memory.getByte(0x10000|address);
+					gfxWord = TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))];
+					readValue = memory.getByte(address);
+					gfxWord |= TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]<<7;
+					break;
+					
+				}
+
+				int yPos = (y<<4)+yc;
+					
+				colorWord |= gfxWord<<colorWordSize;
+				colorWordSize += 14;
+
+				BufferedImage display = rawDisplay[bufferPage];
+				while( colorWordSize>=4 ) {
+					int colorNibble = colorWord&0x0f;
+					int outColor = pal[colorNibble];
+					int halfColor = new Color(outColor).darker().darker().darker().darker().getRGB();
+					int scanColor = new Color(outColor).darker().darker().darker().darker().darker().getRGB();
+					if( (colorNibble&1)!=0 ) {
+						display.setRGB(xPos, yPos, outColor);
+						display.setRGB(xPos++, yPos+1, scanColor);
+					} else {
+						display.setRGB(xPos, yPos, halfColor);
+						display.setRGB(xPos++, yPos+1, halfColor);
+					}
+					if( (colorNibble&2)!=0 ) {
+						display.setRGB(xPos, yPos, outColor);
+						display.setRGB(xPos++, yPos+1, scanColor);
+					} else {
+						display.setRGB(xPos, yPos, halfColor);
+						display.setRGB(xPos++, yPos+1, halfColor);
+					}
+					if( (colorNibble&4)!=0 ) {
+						display.setRGB(xPos, yPos, outColor);
+						display.setRGB(xPos++, yPos+1, scanColor);
+					} else {
+						display.setRGB(xPos, yPos, halfColor);
+						display.setRGB(xPos++, yPos+1, halfColor);
+					}
+					if( (colorNibble&8)!=0 ) {
+						display.setRGB(xPos, yPos, outColor);
+						display.setRGB(xPos++, yPos+1, scanColor);
+					} else {
+						display.setRGB(xPos, yPos, halfColor);
+						display.setRGB(xPos++, yPos+1, halfColor);
+					}
+					colorWord >>= 4;
+					colorWordSize -= 4;
+				}
+
+			}
+		
+		}
+
+	}
+
+	private void flipPage() {
+		paintPage = bufferPage;
 		canvas.repaint();
+		bufferPage = bufferPage==1 ? 0:1;
+	}
+
+	private void cleanEdges() {
+		BufferedImage display = rawDisplay[bufferPage];
+		for( int yb = 0; yb < 24*16; yb++ ) {
+			for( int xb = 0; xb < 7; xb++ )
+				display.setRGB(xb, yb, 0);
+			for( int xb = 80*7; xb < 81*7; xb++ )
+				display.setRGB(xb, yb, 0);
+		}
 	}
 
 	public static int getAddressLo40( int page, int scanline, int offset )
@@ -1001,5 +1184,72 @@ public class DisplayAppleIIe extends DisplayWindow {
 		return address;
 	}
 
+	@Override
+	public void coldRestart() throws HardwareException {
+		rawDisplay = new BufferedImage[2];
+		bufferPage = 0;
+		paintPage = 1;
+		rawDisplay[0] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
+		rawDisplay[1] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
+		generatePalette();
+		warmRestart();
+	}
 
+	@Override
+	public void warmRestart() throws HardwareException {
+		
+	}
+
+	private void generatePalette() {
+		
+		// Color palette
+
+		pal = new int[16];
+		Color [] basePal = new Color[4];
+
+		for( int palIndex = 0; palIndex<4; palIndex++ ) {
+			
+			basePal[palIndex] = new Color(Color.HSBtoRGB((((3-palIndex)<<6)+hueShift)/256f, 1f, PAL_BRIGHTNESS/256f));
+			// Convert to approximate NTSC color standard
+//			basePal[palIndex].r = basePal[palIndex].r*30/20;
+//			basePal[palIndex].g = basePal[palIndex].g*30/22;
+//			basePal[palIndex].b = basePal[palIndex].b*30/28;
+		}
+
+		for( int palIndex = 1; palIndex<16; palIndex++ ) {
+
+			Color mix = new Color(0);
+			int baseIndex = 0;
+			int bits = 0;
+			for( int bitMask = palIndex; bitMask>0; bitMask >>= 1, baseIndex++ ){
+				if( (bitMask&0x01)!=0 ) {
+					bits++;
+					int red = Math.min((int)(basePal[baseIndex].getRed())+mix.getRed(), 255);
+					int green = Math.min((int)(basePal[baseIndex].getGreen())+mix.getGreen(), 255);
+					int blue = Math.min((int)(basePal[baseIndex].getBlue())+mix.getBlue(), 255);
+					mix = new Color(red, green, blue);
+				}
+			}
+
+//			mix.b = min(mix.b*4/3, 255);
+
+			if( bits==1 ) {
+				int red = Math.min(mix.getRed()*2, 255);
+				int green = Math.min(mix.getGreen()*2, 255);
+				int blue = Math.min(mix.getBlue()*2, 255);
+				mix = new Color(red, green, blue);
+			}
+	/*
+			if( bits>2 || palIndex==5 || palIndex==10 ) {
+				mix.r = min(mix.r*4/3, 255);
+				mix.g = min(mix.g*4/3, 255);
+				mix.b = min(mix.b*4/3, 255);
+			}
+	*/
+			pal[palIndex] = mix.getRGB();
+
+		}
+		
+	}
+	
 }

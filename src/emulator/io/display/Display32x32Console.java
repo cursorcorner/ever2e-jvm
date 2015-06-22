@@ -2,6 +2,7 @@ package emulator.io.display;
 
 import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
+import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBus8;
 
 public class Display32x32Console extends DisplayConsole {
@@ -10,9 +11,13 @@ public class Display32x32Console extends DisplayConsole {
 
 	private static final int X_SIZE = 32;
 	private static final int Y_SIZE = 32;
+
+	private Memory8 memory;
+	private int memBuf [];
 	
-	public Display32x32Console(MemoryBus8 memory, long unitsPerCycle ) {
-		super(memory, unitsPerCycle);
+	public Display32x32Console(MemoryBus8 memoryBus, long unitsPerCycle ) {
+		super(unitsPerCycle);
+		this.memory = memoryBus.getMemory();
 	}
 
 	@Override
@@ -51,8 +56,6 @@ public class Display32x32Console extends DisplayConsole {
 	{
 		return 0x0200+(scanline<<5)+offset;
 	}
-
-	private static int memBuf [];
 
 	public void showChanges() {
 		

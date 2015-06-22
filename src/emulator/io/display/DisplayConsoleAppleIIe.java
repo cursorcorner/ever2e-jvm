@@ -2,12 +2,18 @@ package emulator.io.display;
 
 import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
+import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBusAppleIIe;
 
 public class DisplayConsoleAppleIIe extends DisplayConsole {
 	
-	public DisplayConsoleAppleIIe( MemoryBusAppleIIe memory, long unitsPerCycle ) {
-		super(memory, unitsPerCycle);
+	private MemoryBusAppleIIe memoryBus;
+	private Memory8 memory;
+
+	public DisplayConsoleAppleIIe( MemoryBusAppleIIe memoryBus, long unitsPerCycle ) {
+		super(unitsPerCycle);
+		this.memoryBus = memoryBus;
+		this.memory = memoryBus.getMemory();
 	}
 
 	@Override
@@ -22,7 +28,7 @@ public class DisplayConsoleAppleIIe extends DisplayConsole {
 			buf.append("│");
 			for( int x = 0; x<40; x++ ) 
 				buf.append(transliterate(memory.getByte(
-						getAddressLo40(((MemoryBusAppleIIe) memory).isPage2() ? 2:1, y, x))));
+						getAddressLo40(memoryBus.isPage2() ? 2:1, y, x))));
 			buf.append("│\n");
 		}
 		buf.append("└");

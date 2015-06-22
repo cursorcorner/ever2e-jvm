@@ -49,7 +49,24 @@ public class Emulator8Coordinator {
 						"00"));
 	
 	}
-	
+/*	
+	static final String BASIC_PROGRAM =
+			"10 REM HGR TEST\r"+
+			"20 HGR2\r"+
+			"30 FOR X = 6 TO 279 STEP 7\r"+
+			"40 IF X-6-INT((X-6)/21)*21 = 0 THEN HCOLOR = 7 : HPLOT X,0 TO X,127 : HCOLOR = 3 : HPLOT X,128 TO X,191\r"+
+			"50 HCOLOR = 7 : HPLOT X,64 TO X,127\r"+
+			"60 HCOLOR = 3 : HPLOT X,80 TO X,111 : HPLOT X,32 TO X,48 : HPLOT X,143 TO X,159\r"+
+			"70 HCOLOR = 4 : IF X<279 THEN HPLOT X+1,128 TO X+1, 191\r"+
+			"80 NEXT\r"+
+			"90 C(0)=3:C(1)=7:C(2)=0:C(3)=4:C(4)=2:C(5)=6:C(6)=1:C(7)=5\r"+
+			"100 FOR Y = 0 TO 31\r"+
+			"110 HCOLOR = C(INT(Y/4))\r"+
+			"120 HPLOT 0,Y TO 279,Y\r"+
+			"130 HPLOT 0,191 - Y TO 279,191 - Y\r"+
+			"140 NEXT\r"+
+			"RUN\r";
+*
 	static final String BASIC_PROGRAM =
 			"B = ASC(\" \") : TEXT : POKE 34, 10 : HOME : POKE 35, 14 : COLOR = B - INT(B/16)*16 : HLIN 0, 39 AT 18: HLIN 0, 39 AT 28 : COLOR = INT(B/16) : HLIN 0, 39 AT 19 : HLIN 0, 39 AT 29\r"+
 			"CALL -151\r"+
@@ -313,8 +330,8 @@ public class Emulator8Coordinator {
 			"5FC0: 36 0A 60 05 16 1D 36 5A 36 5A 75 55 6B 55 76 5D 67 1D 56 59 7F 7D 77 5A 67 5A 66 5A 07 5A 21 02 00 00 00 40 00 2D 23 0E 31 6D 31 45 37 6E 3B 6D 7B 6D 17 0E 3A 5D 77 7D FF FF 00 00 FF FF 00 00 \r"+
 			"300: AD 10 C0 8D 00 C0  8D 57 C0  8D 5E C0  8D 52 C0  8D 0D C0  8D 55 C0  8D 50 C0  AD 00 C0 10 FB  AD 10 C0 8D 51 C0 8D 0C C0 8D 52 C0 8D 54 C0  64 22 A9 17 85 23  4C 00 E0\r"+
 			"300G\r";
-	
-/*			static final String BASIC_PROGRAM =
+*/	
+			static final String BASIC_PROGRAM =
 			" 10  REM *** LO-RES COLOR TEST ***\r"+
 			" 20  GR : POKE 49234, 0\r"+
 			" 30  ROW = 3 : COL = 8\r"+
@@ -342,7 +359,7 @@ public class Emulator8Coordinator {
 			"250  IF PEEK(49152) < 128 THEN 250\r"+
 			"260  TEXT : HOME : GET C$\r"+
 			"RUN\r";
-*/	
+	
 	public static void main(String[] argList) throws HardwareException, InterruptedException {
 
 		System.out.println("--------------------------------------");

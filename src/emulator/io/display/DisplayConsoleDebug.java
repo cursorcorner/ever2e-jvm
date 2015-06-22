@@ -6,13 +6,13 @@ import core.memory.memory8.Memory8;
 
 public class DisplayConsoleDebug extends DisplayConsole {
 
-	Memory8 memory;
-	Cpu65c02 cpu;
-	long lastUnits;
+	private Memory8 memory;
+	private Cpu65c02 cpu;
+	private long lastUnits;
 	private static int memBuf [];
 	
 	public DisplayConsoleDebug( Cpu65c02 cpu, long unitsPerCycle ) {
-		super(null, unitsPerCycle);
+		super(unitsPerCycle);
 		this.cpu = cpu;
 		memory = cpu.getMemoryBus().getMemory();
 	}
