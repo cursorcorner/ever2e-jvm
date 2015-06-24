@@ -49,8 +49,8 @@ public class Emulator8Coordinator {
 						"00"));
 	
 	}
-/*	
-	static final String BASIC_PROGRAM =
+
+	static final String HGR_TEST =
 			"10 REM HGR TEST\r"+
 			"20 HGR2\r"+
 			"30 FOR X = 6 TO 279 STEP 7\r"+
@@ -66,8 +66,8 @@ public class Emulator8Coordinator {
 			"130 HPLOT 0,191 - Y TO 279,191 - Y\r"+
 			"140 NEXT\r"+
 			"RUN\r";
-*
-	static final String BASIC_PROGRAM =
+
+	static final String DHGR_TEST =
 			"B = ASC(\" \") : TEXT : POKE 34, 10 : HOME : POKE 35, 14 : COLOR = B - INT(B/16)*16 : HLIN 0, 39 AT 18: HLIN 0, 39 AT 28 : COLOR = INT(B/16) : HLIN 0, 39 AT 19 : HLIN 0, 39 AT 29\r"+
 			"CALL -151\r"+
 			"4000: 5B 6E 35 56 5B 41 5B 14 50 15 50 41 55 41 55 15 05 41 55 55 5B 6D 35 55 55 54 50 55 35 14 50 40 50 15 55 56 35 56 35 56 3B 6C 3B 6D 5B 56 55 6D 55 6D 5D 54 35 15 55 54 5B 14 50 16 05 55 05 54 \r"+
@@ -330,8 +330,8 @@ public class Emulator8Coordinator {
 			"5FC0: 36 0A 60 05 16 1D 36 5A 36 5A 75 55 6B 55 76 5D 67 1D 56 59 7F 7D 77 5A 67 5A 66 5A 07 5A 21 02 00 00 00 40 00 2D 23 0E 31 6D 31 45 37 6E 3B 6D 7B 6D 17 0E 3A 5D 77 7D FF FF 00 00 FF FF 00 00 \r"+
 			"300: AD 10 C0 8D 00 C0  8D 57 C0  8D 5E C0  8D 52 C0  8D 0D C0  8D 55 C0  8D 50 C0  AD 00 C0 10 FB  AD 10 C0 8D 51 C0 8D 0C C0 8D 52 C0 8D 54 C0  64 22 A9 17 85 23  4C 00 E0\r"+
 			"300G\r";
-*/	
-			static final String BASIC_PROGRAM =
+
+		static final String GR_TEST =
 			" 10  REM *** LO-RES COLOR TEST ***\r"+
 			" 20  GR : POKE 49234, 0\r"+
 			" 30  ROW = 3 : COL = 8\r"+
@@ -359,7 +359,7 @@ public class Emulator8Coordinator {
 			"250  IF PEEK(49152) < 128 THEN 250\r"+
 			"260  TEXT : HOME : GET C$\r"+
 			"RUN\r";
-	
+
 	public static void main(String[] argList) throws HardwareException, InterruptedException {
 
 		System.out.println("--------------------------------------");
@@ -436,7 +436,7 @@ public class Emulator8Coordinator {
 		if( program.getLayout()==MachineLayoutType.DEBUG_65C02 ||
 				program.getLayout()==MachineLayoutType.APPLE_IIE ) {
 			
-			String pushStr = BASIC_PROGRAM;
+			String pushStr = GR_TEST;
 			for( int i = 0; i<pushStr.length(); i++ )
 				keyboard.pushKeyCode(pushStr.charAt(i));
 		}

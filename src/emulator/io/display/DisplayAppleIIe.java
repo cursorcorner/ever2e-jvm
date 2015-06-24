@@ -8,7 +8,6 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
@@ -42,12 +41,13 @@ public class DisplayAppleIIe extends DisplayWindow {
 	private int lastSwitchIteration;
 	private int page;
 	private int xPos;
-	private int[] pal;
+	private int [] pal;
+	private int palIndex;
 	private int hueShift = -32;
-
-	private static final int COLOR_BLACK = Color.BLACK.getRGB();
-	private static final int COLOR_WHITE = Color.WHITE.getRGB();
-	private static final int COLOR_GRAY_50 = Color.GRAY.getRGB();
+	
+	private static final int PAL_INDEX_COLOR = 0;
+	private static final int PAL_INDEX_MONO = 48;
+	private static final int PAL_INDEX_MONO_GREEN = 2*48;
 	private static final int PAL_BRIGHTNESS = 160;
 	private static final int OFFSET40 = 7;
 
@@ -969,6 +969,10 @@ public class DisplayAppleIIe extends DisplayWindow {
 			colorWordSize += OFFSET40 - offset40;
 			offset40 = OFFSET40;
 		}
+		if( displayType==DisplayType.TEXT40 || displayType==DisplayType.TEXT80 )
+			palIndex = PAL_INDEX_MONO;
+		else
+			palIndex = PAL_INDEX_COLOR;
 
 		page = memoryBus.isPage2()&&!memoryBus.is80Store() ? 2:1;
 
@@ -992,6 +996,12 @@ public class DisplayAppleIIe extends DisplayWindow {
 			
 			for( int x = 0; x < 40; x++ ) {
 				
+				int switchIteration = memoryBus.getSwitchIteration();
+				if( lastSwitchIteration!=switchIteration ) {
+					lastSwitchIteration = switchIteration;
+					evaluateSwitchChange();
+				}
+
 				if( x==0 ) {
 					
 					xPos = 0;
@@ -1023,12 +1033,6 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 				}
 					
-				int switchIteration = memoryBus.getSwitchIteration();
-				if( lastSwitchIteration!=switchIteration ) {
-					lastSwitchIteration = switchIteration;
-					evaluateSwitchChange();
-				}
-
 				switch( displayType ) {
 				
 				case HIRES40:
@@ -1103,37 +1107,37 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 				BufferedImage display = rawDisplay[bufferPage];
 				while( colorWordSize>=4 ) {
-					int colorNibble = colorWord&0x0f;
-					int outColor = pal[colorNibble];
-					int halfColor = new Color(outColor).darker().darker().darker().darker().getRGB();
-					int scanColor = new Color(outColor).darker().darker().darker().darker().darker().getRGB();
-					if( (colorNibble&1)!=0 ) {
+					int colorCode = palIndex+(colorWord&0x0f);
+					int outColor = pal[colorCode];
+					int bleedColor = pal[colorCode+16];
+					int scanColor = pal[colorCode+32];
+					if( (colorCode&1)!=0 ) {
 						display.setRGB(xPos, yPos, outColor);
 						display.setRGB(xPos++, yPos+1, scanColor);
 					} else {
-						display.setRGB(xPos, yPos, halfColor);
-						display.setRGB(xPos++, yPos+1, halfColor);
+						display.setRGB(xPos, yPos, bleedColor);
+						display.setRGB(xPos++, yPos+1, bleedColor);
 					}
-					if( (colorNibble&2)!=0 ) {
+					if( (colorCode&2)!=0 ) {
 						display.setRGB(xPos, yPos, outColor);
 						display.setRGB(xPos++, yPos+1, scanColor);
 					} else {
-						display.setRGB(xPos, yPos, halfColor);
-						display.setRGB(xPos++, yPos+1, halfColor);
+						display.setRGB(xPos, yPos, bleedColor);
+						display.setRGB(xPos++, yPos+1, bleedColor);
 					}
-					if( (colorNibble&4)!=0 ) {
+					if( (colorCode&4)!=0 ) {
 						display.setRGB(xPos, yPos, outColor);
 						display.setRGB(xPos++, yPos+1, scanColor);
 					} else {
-						display.setRGB(xPos, yPos, halfColor);
-						display.setRGB(xPos++, yPos+1, halfColor);
+						display.setRGB(xPos, yPos, bleedColor);
+						display.setRGB(xPos++, yPos+1, bleedColor);
 					}
-					if( (colorNibble&8)!=0 ) {
+					if( (colorCode&8)!=0 ) {
 						display.setRGB(xPos, yPos, outColor);
 						display.setRGB(xPos++, yPos+1, scanColor);
 					} else {
-						display.setRGB(xPos, yPos, halfColor);
-						display.setRGB(xPos++, yPos+1, halfColor);
+						display.setRGB(xPos, yPos, bleedColor);
+						display.setRGB(xPos++, yPos+1, bleedColor);
 					}
 					colorWord >>= 4;
 					colorWordSize -= 4;
@@ -1186,6 +1190,7 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 	@Override
 	public void coldRestart() throws HardwareException {
+		lastSwitchIteration = -1;
 		rawDisplay = new BufferedImage[2];
 		bufferPage = 0;
 		paintPage = 1;
@@ -1204,17 +1209,11 @@ public class DisplayAppleIIe extends DisplayWindow {
 		
 		// Color palette
 
-		pal = new int[16];
+		pal = new int[48*3];
 		Color [] basePal = new Color[4];
 
-		for( int palIndex = 0; palIndex<4; palIndex++ ) {
-			
+		for( int palIndex = 0; palIndex<4; palIndex++ )
 			basePal[palIndex] = new Color(Color.HSBtoRGB((((3-palIndex)<<6)+hueShift)/256f, 1f, PAL_BRIGHTNESS/256f));
-			// Convert to approximate NTSC color standard
-//			basePal[palIndex].r = basePal[palIndex].r*30/20;
-//			basePal[palIndex].g = basePal[palIndex].g*30/22;
-//			basePal[palIndex].b = basePal[palIndex].b*30/28;
-		}
 
 		for( int palIndex = 1; palIndex<16; palIndex++ ) {
 
@@ -1231,25 +1230,38 @@ public class DisplayAppleIIe extends DisplayWindow {
 				}
 			}
 
-//			mix.b = min(mix.b*4/3, 255);
-
 			if( bits==1 ) {
 				int red = Math.min(mix.getRed()*2, 255);
 				int green = Math.min(mix.getGreen()*2, 255);
 				int blue = Math.min(mix.getBlue()*2, 255);
 				mix = new Color(red, green, blue);
 			}
-	/*
-			if( bits>2 || palIndex==5 || palIndex==10 ) {
-				mix.r = min(mix.r*4/3, 255);
-				mix.g = min(mix.g*4/3, 255);
-				mix.b = min(mix.b*4/3, 255);
-			}
-	*/
+
 			pal[palIndex] = mix.getRGB();
 
 		}
 		
+		// Add monochrome
+		pal[PAL_INDEX_MONO] = Color.BLACK.getRGB();
+		pal[PAL_INDEX_MONO_GREEN] = Color.BLACK.getRGB();
+		for( int index = 1; index<16; index++ ) {
+			pal[PAL_INDEX_MONO+index] = Color.WHITE.getRGB();
+			pal[PAL_INDEX_MONO_GREEN+index] = Color.GREEN.getRGB();
+		}
+		
+		// Add color bleed palettes
+		for( int palSet = 0; palSet<3; palSet++ ) {
+			for( int index = 0; index<16; index++ ) {
+				// Pixel bleed
+				if( palSet*48==PAL_INDEX_COLOR )
+					pal[palSet*48+index+16] = new Color(pal[palSet*48+index]).darker().darker().darker().darker().darker().getRGB();
+				else
+					pal[palSet*48+index+16] = Color.BLACK.getRGB();
+				// Blank scanline bleed
+				pal[palSet*48+index+32] = new Color(pal[palSet*48+index]).darker().darker().darker().darker().getRGB();
+			}
+		}
+
 	}
 	
 }
