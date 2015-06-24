@@ -13,18 +13,12 @@ http://www.cursorcorner.net/contact.php
 -------------------------------------------------------------------------------
 
 Get source code from;
-http://cursorcorner.net/project.html
+http://github.com/cursorcorner/ever2e-jvm
 
 
 -------------------------------------------------------------------------------
                                   KNOWN BUGS                                   
 -------------------------------------------------------------------------------
 
-Decimal mode not yet implemented in CPU.
+Character not always popped when expected
 
-
--------------------------------------------------------------------------------
-                                 VERSION INFO                                  
--------------------------------------------------------------------------------
-
-Beta Version 1
