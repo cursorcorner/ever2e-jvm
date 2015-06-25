@@ -547,9 +547,8 @@ public class MemoryBusIIe extends MemoryBus8 {
 				// Peripheral card ROM at $CNXX
 				if( slotRom256b[slot] != null )
 					return slotRom256b[slot].getByte(address&0x00ff);
-				else {
+				else
 					return monitor==null ? 0:monitor.getLastRead();
-				}
 			}
 			
 		}
@@ -585,12 +584,8 @@ public class MemoryBusIIe extends MemoryBus8 {
 				// Peripheral card ROM at $C3XX
 				if( slotRom256b[3] != null )
 					return slotRom256b[3].getByte(address&0x00ff);
-				else {
-					System.err.println("Warning: invalid read from peripheral memory at 0x" +
-							Integer.toHexString(address));
-					return 0;
-				}
-				
+				else
+					return monitor==null ? 0:monitor.getLastRead();
 			}
 
 		}
