@@ -848,6 +848,21 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc01e, new SwitchKeyboardState(switchAltCharSet));
 		ioSwitches.assignBlock(0xc01f, new SwitchKeyboardState(switch80Col));
 		ioSwitches.assignBlock(0xc030, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc031, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc032, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc033, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc034, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc035, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc036, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc037, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc038, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc039, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03a, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03b, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03c, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03d, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03e, new SwitchSetRWIIe(switchSpeakerToggle));
+		ioSwitches.assignBlock(0xc03f, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc050, new SwitchClearRWIIe(switchText));
 		ioSwitches.assignBlock(0xc051, new SwitchSetRWIIe(switchText));
 		ioSwitches.assignBlock(0xc052, new SwitchClearRWIIe(switchMixed));
@@ -1292,28 +1307,6 @@ public class MemoryBusIIe extends MemoryBus8 {
 		cout.flags(coutFlags);
 
 	}
-	
-	case 0xc030:
-	case 0xc031:
-	case 0xc032:
-	case 0xc033:
-	case 0xc034:
-	case 0xc035:
-	case 0xc036:
-	case 0xc037:
-	case 0xc038:
-	case 0xc039:
-	case 0xc03a:
-	case 0xc03b:
-	case 0xc03c:
-	case 0xc03d:
-	case 0xc03e:
-	case 0xc03f:
-		// SPEAKER
-		// Toggle speaker diaphragm, less any CPU multiplier to avoid altering pitch on a faster CPU setting
-		if( (toggleMod++)%cpu->getMultiplier()==0 )
-			speaker->toggle();
-		return _randRead();
 	
 	case 0xc019:
 		// Read VBL
