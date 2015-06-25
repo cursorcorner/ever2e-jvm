@@ -190,7 +190,8 @@ public class KeyboardIIe extends Keyboard {
 		modIndex = MOD_MAP[modifierSet|(capsLockDown?CAPS_KEY_MASK:0)];
 		if( keyCodeArray!=null ) {
 			if( !super.isKeyPressed(keyCodeArray[0]) ) {
-				keyCode = (byte) (0x80|keyCodeArray[modIndex]);
+				if( keyQueue.size()==0 )
+					keyCode = (byte) (0x80|keyCodeArray[modIndex]);
 				keyPressed.set(keyCodeArray[0]);
 				keyCount++;
 			}
