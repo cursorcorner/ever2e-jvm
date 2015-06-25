@@ -9,7 +9,7 @@ public abstract class HardwareManager implements HardwareComponent, Comparable<H
 	private static Random rand = new Random();
 	private long id = rand.nextLong();
 	private long nextActionCycleUnits;
-	private long unitsPerCycle;
+	protected long unitsPerCycle;
 	private static long offsetUnits;
 	
 	public HardwareManager( long unitsPerCycle ) {

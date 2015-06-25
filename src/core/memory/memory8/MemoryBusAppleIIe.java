@@ -34,6 +34,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 	private SwitchState switchAn1;
 	private SwitchState switchAn2;
 	private SwitchState switchAn3;
+	private SwitchState switchSpeakerToggle;
 
 	private int switchIteration;
 
@@ -765,6 +766,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 		switchAn1 = new SwitchState();
 		switchAn2 = new SwitchState();
 		switchAn3 = new SwitchState();
+		switchSpeakerToggle = new SwitchState();
 		
 		memoryLayout = new MemoryBlock8(0x0000, 0xffff, 8);
 	
@@ -846,6 +848,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc01d, new SwitchKeyboardState(switchHiRes));
 		ioSwitches.assignBlock(0xc01e, new SwitchKeyboardState(switchAltCharSet));
 		ioSwitches.assignBlock(0xc01f, new SwitchKeyboardState(switch80Col));
+		ioSwitches.assignBlock(0xc030, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc050, new SwitchClearRWIIe(switchText));
 		ioSwitches.assignBlock(0xc051, new SwitchSetRWIIe(switchText));
 		ioSwitches.assignBlock(0xc052, new SwitchClearRWIIe(switchMixed));
@@ -1168,6 +1171,18 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 			this.switchAn3.setState();
 		else
 			this.switchAn3.resetState();
+		switchIteration++;
+	}
+
+	public boolean isSpeakerToggle() {
+		return switchSpeakerToggle.getState();
+	}
+
+	public void setSpeakerToggle( boolean switchSpeakerToggle ) {
+		if( switchSpeakerToggle )
+			this.switchSpeakerToggle.setState();
+		else
+			this.switchSpeakerToggle.resetState();
 		switchIteration++;
 	}
 

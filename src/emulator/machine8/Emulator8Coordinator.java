@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import javax.sound.sampled.LineUnavailableException;
+
 import org.junit.Test;
 
 import core.cpu.cpu8.Cpu65c02;
@@ -21,6 +23,7 @@ import emulator.io.display.Display32x32Console;
 import emulator.io.display.DisplayAppleIIe;
 import emulator.io.display.DisplayConsoleDebug;
 import emulator.io.keyboard.KeyboardIIe;
+import emulator.io.speaker.Speaker1Bit;
 import emulator.machine.Emulator;
 
 public class Emulator8Coordinator {
@@ -331,7 +334,7 @@ public class Emulator8Coordinator {
 			"300: AD 10 C0 8D 00 C0  8D 57 C0  8D 5E C0  8D 52 C0  8D 0D C0  8D 55 C0  8D 50 C0  AD 00 C0 10 FB  AD 10 C0 8D 51 C0 8D 0C C0 8D 52 C0 8D 54 C0  64 22 A9 17 85 23  4C 00 E0\r"+
 			"300G\r";
 
-		static final String GR_TEST =
+	static final String GR_TEST =
 			" 10  REM *** LO-RES COLOR TEST ***\r"+
 			" 20  GR : POKE 49234, 0\r"+
 			" 30  ROW = 3 : COL = 8\r"+
@@ -359,6 +362,20 @@ public class Emulator8Coordinator {
 			"250  IF PEEK(49152) < 128 THEN 250\r"+
 			"260  TEXT : HOME : GET C$\r"+
 			"RUN\r";
+
+	static final String SOUND_TEST =
+			"CALL -151\r"+
+			"300: A9 03\r"+
+			"302: A0 20\r"+
+			"304: 8D 30 C0\r"+
+			"307: 88\r"+
+			"308: D0 FD\r"+
+			"30A: CA\r"+
+			"30B: D0 F5\r"+
+			"30D: 3A\r"+
+			"30E: D0 F2\r"+
+			"310: 60\r"+
+			"300G";
 
 	public static void main(String[] argList) throws HardwareException, InterruptedException {
 
@@ -431,12 +448,17 @@ public class Emulator8Coordinator {
 			cpu.coldRestart();
 			//hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusAppleIIe) bus, (long) (unitsPerCycle/displayMultiplier)));
 			hardwareManagerQueue.add(new DisplayAppleIIe((MemoryBusAppleIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier)));
+			try {
+				hardwareManagerQueue.add(new Speaker1Bit((MemoryBusAppleIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_SECOND));
+			} catch (LineUnavailableException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		if( program.getLayout()==MachineLayoutType.DEBUG_65C02 ||
 				program.getLayout()==MachineLayoutType.APPLE_IIE ) {
 			
-			String pushStr = GR_TEST;
+			String pushStr = SOUND_TEST;
 			for( int i = 0; i<pushStr.length(); i++ )
 				keyboard.pushKeyCode(pushStr.charAt(i));
 		}

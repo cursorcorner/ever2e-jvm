@@ -29,6 +29,7 @@ public class Cpu65c02 extends HardwareManager {
 
 	private int operandPtr;
 	private int newPc;
+	private Opcode newOpcode;
 	private Opcode opcode;
 	
 	private Register reg = new Register();
@@ -422,24 +423,21 @@ public class Cpu65c02 extends HardwareManager {
 		reg.setPC(0xff);
 		reg.setS(0xff);
 		reg.setP(0xff);
+		newPc = 0xffff;
 
 		// This variable is used to suspend CPU access to memory by hardware
 		idleCycle = 0;
 
 		// First instruction is a reset interrupt
-		opcode = INTERRUPT_RES;
-		cycleCount = opcode.getCycleTime();
-
-		// Turn off interrupt line to CPU
+		opcode = null;
 		interruptPending = null;
+		newOpcode = INTERRUPT_RES;
+		cycleCount = INTERRUPT_RES.getCycleTime();
 		
 		memory.coldRestart();
 		
 	}
 
-	/**
-	 * Complete next full instruction.
-	 */
 	@Override
 	public void cycle() throws HardwareException 
 	{
@@ -447,7 +445,11 @@ public class Cpu65c02 extends HardwareManager {
 		/// TODO: Sather 4-27 and C-15 contains more information on per-cycle instruction effects and double / triple / quadruple strobe effects
 		if( idleCycle>5 )
 			throw new HardwareException("Hardware has requested an extended delay, comprimising CPU data integrity");
-		
+
+		opcode = newOpcode;
+		reg.setPC(newPc);
+		cycleCount = opcode.getCycleTime();
+
 		// Check whether current instruction is complete before applying changes
 		// TODO: move this and other proven variables inside the switch
 		int operandCounter = reg.getPC()+1;
@@ -1148,6 +1150,9 @@ public class Cpu65c02 extends HardwareManager {
 				
 		}
 	
+		incSleepCycles(idleCycle+cycleCount);
+		idleCycle = 0;
+	
 		// Supress maskable interrupts if P.I is set
 		if( interruptPending==INTERRUPT_IRQ && reg.getP(StatusRegister.I) )
 			interruptPending = null;
@@ -1156,19 +1161,14 @@ public class Cpu65c02 extends HardwareManager {
 		if( interruptPending==null )
 		{
 			// No interrupt pending - get next memory instruction
-			opcode = OPCODE[memory.getByte(newPc&0xffff)];
+			newOpcode = OPCODE[memory.getByte(newPc&0xffff)];
 		} else {
-			opcode = interruptPending;
+			newOpcode = interruptPending;
 			// Pending interrupt can only be changed by host
 			// e.g. creating reset interrupt or restoring null state
 			if( interruptPending!=INTERRUPT_HLT )
 				interruptPending = null;
 		}
-		cycleCount = opcode.getCycleTime();
-	
-		reg.setPC(newPc);
-		incSleepCycles(idleCycle+cycleCount);
-		idleCycle = 0;
 		
 	}
 
@@ -1186,7 +1186,9 @@ public class Cpu65c02 extends HardwareManager {
 	
 	public String getOpcodeString()
 	{
-		return getOpcodeString(opcode.getMachineCode()==null ? null:reg.getPC(), opcode);
+		if( opcode.getMachineCode()==null )
+			return "                 "+opcode.getMnemonic()+"                  ";
+		return getOpcodeString(reg.getPC(), opcode);
 	}
 
 	public String getOpcodeString(Integer address, Opcode interrupt)

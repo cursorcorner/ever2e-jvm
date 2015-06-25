@@ -33,6 +33,7 @@ public class DisplayConsoleDebug extends DisplayConsole {
 			}
 //			System.out.println(cpu.getOpcodeString()+"   "+cpu.getRegister().toString());
 		}
+System.out.println(cpu.getOpcodeString()+"   "+cpu.getRegister().toString());
 		lastUnits = cpu.getNextCycleUnits();
 	}
 

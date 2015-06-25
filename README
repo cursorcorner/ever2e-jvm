@@ -21,4 +21,24 @@ http://github.com/cursorcorner/ever2e-jvm
 -------------------------------------------------------------------------------
 
 Character not always popped when expected
+Not registering first press of control key
+Loses keyboard focus on leaving application
+HGR artifacts not completely accurate
+GR artifacts not completely accurate
+	seems to be immune to offset fragmentation in hardware tests
+Speaker static at startup
+Does not successfully run IIe memory test
 
+
+-------------------------------------------------------------------------------
+                                 VERSION INFO                                   
+-------------------------------------------------------------------------------
+
+Sound now fully implemented
+CPU with accurate cycle timing (decimal mode incomplete)
+Text / graphics modes supported with accurate color and pixel offset
+	other than GR40M, and GR80
+Key input matches IIe behavior
+	key repeat not yet complete
+	reset key not yet implemented
+Memory bus complete
