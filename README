@@ -21,8 +21,7 @@ http://github.com/cursorcorner/ever2e-jvm
 -------------------------------------------------------------------------------
 
 Character not always popped when expected
-Not registering first press of control key
-Loses keyboard focus on leaving application
+Inserted keys can be overridden by key presses
 HGR artifacts not completely accurate
 GR artifacts not completely accurate
 	seems to be immune to offset fragmentation in hardware tests

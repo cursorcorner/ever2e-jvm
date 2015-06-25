@@ -902,11 +902,11 @@ public class DisplayIIe extends DisplayWindow {
 		});
 		frame.add(canvas);
 		canvas.setBackground(Color.BLACK);
-		frame.setVisible(true);  
-//TODO:		frame.requestFocusInWindow();
+		frame.setVisible(true);
 		frame.setSize(XSIZE+(xOff<<1), YSIZE+(yOff<<1)+frame.getInsets().top);
 		frame.addKeyListener(keyboard);
 		canvas.repaint();
+		canvas.addKeyListener(keyboard);
 	}
 
 	private class Canvas32x32 extends Canvas {
