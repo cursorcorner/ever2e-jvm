@@ -324,9 +324,11 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 		@Override
 		public int readMem( int address ) {
+			if( keyboard==null )
+				return 0;
 			if( readSwitchStatus==null ) {
 				keyboard.toggleKeyQueue(true);
-				return keyboard==null ? 0x00:keyboard.getTypedKeyCode();
+				return keyboard.getTypedKeyCode();
 			}
 			else
 				return readSwitchStatus.getState() ?
@@ -354,9 +356,11 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 		@Override
 		public int readMem( int address ) {
+			if( keyboard==null )
+				return 0;
 			if( readSwitchStatus==null ) {
 				keyboard.toggleKeyQueue(false);
-				int ret = keyboard==null ? 0x00:keyboard.getHeldKeyCode();
+				int ret = keyboard.getHeldKeyCode();
 				return ret;
 			}
 			else
@@ -367,6 +371,8 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 		@Override
 		public void writeMem( int address, int value ) {
+			if( keyboard==null )
+				return;
 			if( readSwitchStatus==null )
 				keyboard.toggleKeyQueue(false);
 			keyboard.getHeldKeyCode();
