@@ -463,7 +463,7 @@ public class Emulator8Coordinator {
 		if( program.getLayout()==MachineLayoutType.DEBUG_65C02 ||
 				program.getLayout()==MachineLayoutType.APPLE_IIE ) {
 			
-			String pushStr = SOUND_TEST;
+			String pushStr = GR_TEST;
 			for( int i = 0; i<pushStr.length(); i++ )
 				keyboard.pushKeyCode(pushStr.charAt(i));
 		}

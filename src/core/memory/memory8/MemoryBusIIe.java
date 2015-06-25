@@ -360,13 +360,12 @@ public class MemoryBusIIe extends MemoryBus8 {
 				return 0;
 			if( readSwitchStatus==null ) {
 				keyboard.toggleKeyQueue(false);
-				int ret = keyboard.getHeldKeyCode();
-				return ret;
+				return keyboard.getHeldKeyCode();
 			}
 			else
 				return readSwitchStatus.getState() ?
-						0x80|keyboard.getHeldKeyCode():
-							0x7f&keyboard.getHeldKeyCode();
+						0x80|keyboard.getTypedKeyCode():
+							0x7f&keyboard.getTypedKeyCode();
 		}
 
 		@Override
