@@ -8,17 +8,21 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
-import core.memory.memory8.MemoryBusAppleIIe;
+import core.memory.memory8.MemoryBusIIe;
 import emulator.io.keyboard.KeyboardIIe;
 
-public class DisplayAppleIIe extends DisplayWindow {
+public class DisplayIIe extends DisplayWindow {
 
+	private Random rand = new Random();
+	private int lastReadValue;
+	
 	private Frame frame;
 	private Canvas32x32 canvas;
-	private MemoryBusAppleIIe memoryBus;
+	private MemoryBusIIe memoryBus;
 	private Memory8 memory;
 
 	private int textMod;
@@ -884,7 +888,7 @@ public class DisplayAppleIIe extends DisplayWindow {
 		HIRES80
 	}
 	
-	public DisplayAppleIIe(MemoryBusAppleIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
+	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
 		super(unitsPerCycle);
 		this.memoryBus = memoryBus;
 		this.memory = memoryBus.getMemory();
@@ -978,7 +982,6 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 	}
 	
-	
 	@Override
 	public void cycle() throws HardwareException {
 		
@@ -987,6 +990,8 @@ public class DisplayAppleIIe extends DisplayWindow {
 		if( textMod<2 && (flashToggle^(++flashToggle)&0x10)!=0 )
 			textMod |= (flashToggle&0x10)!=0 ? 1:0;
 
+		int readRandX = Math.abs(rand.nextInt())%40;
+		int readRandY = (Math.abs(rand.nextInt()%192))<<1;
 		// TODO - cycles should be altered to sync with cpu
 		for( int scanLine = 0; scanLine < 384; scanLine+=2 ) {
 
@@ -1033,10 +1038,11 @@ public class DisplayAppleIIe extends DisplayWindow {
 
 				}
 					
+				int readValue = 0;
 				switch( displayType ) {
 				
 				case HIRES40:
-					int readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
+					readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
 					gfxWord = HGR_TO_DHGR[readValue&0x7f];
 					if( (readValue&0x80)!=0 ) {
 						gfxWord <<= 1;
@@ -1099,7 +1105,9 @@ public class DisplayAppleIIe extends DisplayWindow {
 					break;
 					
 				}
-
+				if( scanLine==readRandY && x==readRandX )
+					this.lastReadValue = readValue;
+				
 				int yPos = (y<<4)+yc;
 					
 				colorWord |= gfxWord<<colorWordSize;
@@ -1262,6 +1270,11 @@ public class DisplayAppleIIe extends DisplayWindow {
 			}
 		}
 
+	}
+
+	public int getLastRead() {
+		// TODO: sync this when cycle timing implementation is complete
+		return lastReadValue;
 	}
 	
 }

@@ -6,7 +6,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import core.exception.HardwareException;
-import core.memory.memory8.MemoryBusAppleIIe;
+import core.memory.memory8.MemoryBusIIe;
 import emulator.HardwareManager;
 
 public class Speaker1Bit extends HardwareManager  {
@@ -33,7 +33,7 @@ public class Speaker1Bit extends HardwareManager  {
 	private static final float SPRING_FORCE = .0002*SKIP_CYCLES*SKIP_CYCLES;
 */
 
-	private MemoryBusAppleIIe bus;
+	private MemoryBusIIe bus;
 
 	private byte [] buffer = new byte[SAMPLE_BUFFER_SIZE];
 	private AudioFormat audioFormat;
@@ -52,7 +52,7 @@ public class Speaker1Bit extends HardwareManager  {
 	private double sampleLength;
 	private double durationInc;
 	
-	public Speaker1Bit( MemoryBusAppleIIe bus, long unitsPerCycle, long bitGranularity ) throws LineUnavailableException {
+	public Speaker1Bit( MemoryBusIIe bus, long unitsPerCycle, long bitGranularity ) throws LineUnavailableException {
 
 		super(unitsPerCycle);
 		durationInc = 1000000000d*(unitsPerCycle/Math.pow(2d, bitGranularity)/1000d)*SKIP_CYCLES;

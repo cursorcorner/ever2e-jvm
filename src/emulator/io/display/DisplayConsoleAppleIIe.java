@@ -3,14 +3,14 @@ package emulator.io.display;
 import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
-import core.memory.memory8.MemoryBusAppleIIe;
+import core.memory.memory8.MemoryBusIIe;
 
 public class DisplayConsoleAppleIIe extends DisplayConsole {
 	
-	private MemoryBusAppleIIe memoryBus;
+	private MemoryBusIIe memoryBus;
 	private Memory8 memory;
 
-	public DisplayConsoleAppleIIe( MemoryBusAppleIIe memoryBus, long unitsPerCycle ) {
+	public DisplayConsoleAppleIIe( MemoryBusIIe memoryBus, long unitsPerCycle ) {
 		super(unitsPerCycle);
 		this.memoryBus = memoryBus;
 		this.memory = memoryBus.getMemory();

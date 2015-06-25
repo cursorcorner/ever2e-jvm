@@ -13,15 +13,15 @@ import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBus8;
-import core.memory.memory8.MemoryBusAppleIIe;
 import core.memory.memory8.MemoryBusDemo8;
+import core.memory.memory8.MemoryBusIIe;
 import emulator.HardwareManager;
 import emulator.Program;
 import emulator.Program.MachineLayoutType;
 import emulator.io.display.Display32x32;
 import emulator.io.display.Display32x32Console;
-import emulator.io.display.DisplayAppleIIe;
 import emulator.io.display.DisplayConsoleDebug;
+import emulator.io.display.DisplayIIe;
 import emulator.io.keyboard.KeyboardIIe;
 import emulator.io.speaker.Speaker1Bit;
 import emulator.machine.Emulator;
@@ -433,26 +433,31 @@ public class Emulator8Coordinator {
 		} else if( program.getLayout()==MachineLayoutType.DEBUG_65C02 ) {
 			keyboard = new KeyboardIIe();
 			rom16k.coldRestart();
-			bus = new MemoryBusAppleIIe(memory, rom16k, keyboard);
+			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldRestart();
 			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldRestart();
 			hardwareManagerQueue.add(new DisplayConsoleDebug(cpu, (long) (unitsPerCycle/cpuMultiplier)));
+			((MemoryBusIIe) bus).setKeyboard(keyboard);
+			((MemoryBusIIe) bus).setDisplay(null);
 		} else {
 			displayMultiplier = 60d/cpuClock;
 			keyboard = new KeyboardIIe();
 			rom16k.coldRestart();
-			bus = new MemoryBusAppleIIe(memory, rom16k, keyboard);
+			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldRestart();
 			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldRestart();
-			//hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusAppleIIe) bus, (long) (unitsPerCycle/displayMultiplier)));
-			hardwareManagerQueue.add(new DisplayAppleIIe((MemoryBusAppleIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier)));
+			//hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier)));
+			DisplayIIe display = new DisplayIIe((MemoryBusIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier));
+			hardwareManagerQueue.add(display);
 			try {
-				hardwareManagerQueue.add(new Speaker1Bit((MemoryBusAppleIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_SECOND));
+				hardwareManagerQueue.add(new Speaker1Bit((MemoryBusIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_SECOND));
 			} catch (LineUnavailableException e) {
 				e.printStackTrace();
 			}
+			((MemoryBusIIe) bus).setKeyboard(keyboard);
+			((MemoryBusIIe) bus).setDisplay(display);
 		}
 		
 		if( program.getLayout()==MachineLayoutType.DEBUG_65C02 ||
@@ -474,8 +479,8 @@ public class Emulator8Coordinator {
 		
 		int addr = program.getProgramStart();
 		for( int opcode : opcodeList ) {
-			if( bus.getClass()==MemoryBusAppleIIe.class && addr>=MemoryBusAppleIIe.ROM_START )
-				rom16k.setByte(addr-MemoryBusAppleIIe.ROM_START, opcode);
+			if( bus.getClass()==MemoryBusIIe.class && addr>=MemoryBusIIe.ROM_START )
+				rom16k.setByte(addr-MemoryBusIIe.ROM_START, opcode);
 			else
 				memory.setByte(addr, opcode);
 			addr++;
@@ -490,9 +495,9 @@ public class Emulator8Coordinator {
 		}
 */
 		if( program.getCode().length+program.getProgramStart()<0xfffd ) {
-			if( bus.getClass()==MemoryBusAppleIIe.class ) {
-				rom16k.setByte(0xfffc-MemoryBusAppleIIe.ROM_START, program.getProgramStart());
-				rom16k.setByte(0xfffd-MemoryBusAppleIIe.ROM_START, program.getProgramStart()>>8);
+			if( bus.getClass()==MemoryBusIIe.class ) {
+				rom16k.setByte(0xfffc-MemoryBusIIe.ROM_START, program.getProgramStart());
+				rom16k.setByte(0xfffd-MemoryBusIIe.ROM_START, program.getProgramStart()>>8);
 			} else {
 				memory.setByte(0xfffc, program.getProgramStart());
 				memory.setByte(0xfffd, program.getProgramStart()>>8);

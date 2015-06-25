@@ -1,9 +1,10 @@
 package core.memory.memory8;
 
 import core.exception.HardwareException;
+import emulator.io.display.DisplayIIe;
 import emulator.io.keyboard.KeyboardIIe;
 
-public class MemoryBusAppleIIe extends MemoryBus8 {
+public class MemoryBusIIe extends MemoryBus8 {
 
 	public static final int BANKED_RAM = 0x10000;
 	public static final int ROM_START = 0xc000;
@@ -12,6 +13,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 	private Memory8 slotRom256b[] = new Memory8[8];
 
 	private KeyboardIIe keyboard;
+	private DisplayIIe monitor;
 	
 	private SwitchState switch80Store;
 	private SwitchState switchHiRes;
@@ -83,9 +85,10 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 		public int readMem( int address ) {
 			/// TODO: add monitor read-byte here instead of 0x00
 			if( readSwitchStatus==null )
-				return 0x00;
+				return monitor==null ? 0:monitor.getLastRead();
 			else
-				return 0x00|(readSwitchStatus.getState() ? 0x80:0x00);
+				return (monitor==null ? 0:monitor.getLastRead()) | 
+						(readSwitchStatus.getState() ? 0x80:0x00);
 		}
 
 	}
@@ -531,8 +534,6 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 	
 			int slot = (address-0xc000)>>8;
 			
-			// $C1XX - $C2XX / $C4XX - $C7XX
-			
 			if( switchIntCxRom.getState() )
 				// Internal ROM at $CNXX
 				return rom16k.getByte(address-0xc000);
@@ -541,9 +542,7 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 				if( slotRom256b[slot] != null )
 					return slotRom256b[slot].getByte(address&0x00ff);
 				else {
-					System.err.println("Warning: invalid read from peripheral memory at 0x" +
-							Integer.toHexString(address));
-					return 0;
+					return monitor==null ? 0:monitor.getLastRead();
 				}
 			}
 			
@@ -718,10 +717,9 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 	
 	private MemoryBlock8 memoryLayout;
 
-	public MemoryBusAppleIIe( Memory8 memory, Memory8 rom16k, KeyboardIIe keyboard ) {
+	public MemoryBusIIe( Memory8 memory, Memory8 rom16k ) {
 		super(memory);
 		this.rom16k = rom16k;
-		this.keyboard = keyboard;
 	}
 
 	@Override
@@ -920,6 +918,18 @@ public class MemoryBusAppleIIe extends MemoryBus8 {
 
 	public KeyboardIIe getKeyboard() {
 		return keyboard;
+	}
+
+	public void setKeyboard( KeyboardIIe keyboard ) {
+		this.keyboard = keyboard;
+	}
+
+	public DisplayIIe getDisplay() {
+		return monitor;
+	}
+
+	public void setDisplay( DisplayIIe display ) {
+		this.monitor = display;
 	}
 
 	public boolean is80Store() {
