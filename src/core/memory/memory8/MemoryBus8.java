@@ -21,11 +21,6 @@ public class MemoryBus8 implements HardwareComponent {
 			memory.setByte(i, 0x00);
 	}
 
-	@Override
-	public void warmRestart() throws HardwareException {
-		memory.warmRestart();
-	}
-
 	public int getByte( int address ) {
 		return memory.getByte(address);
 	}

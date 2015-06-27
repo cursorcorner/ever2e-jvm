@@ -408,11 +408,6 @@ public class Cpu65c02 extends HardwareManager {
 	}
 
 	@Override
-	public void warmRestart() throws HardwareException {
-		memory.warmRestart();
-	}
-
-	@Override
 	public void coldRestart() throws HardwareException {
 		
 		// Startup register values

@@ -27,13 +27,8 @@ public abstract class DisplayConsole extends HardwareManager {
 
 	@Override
 	public void coldRestart() throws HardwareException {
-		warmRestart();
-	}
-
-	@Override
-	public void warmRestart() throws HardwareException {
 		timer = null;
 		fpsAvg = null;
 	}
-	
+
 }

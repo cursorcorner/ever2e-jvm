@@ -1205,12 +1205,6 @@ public class DisplayIIe extends DisplayWindow {
 		rawDisplay[0] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
 		rawDisplay[1] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
 		generatePalette();
-		warmRestart();
-	}
-
-	@Override
-	public void warmRestart() throws HardwareException {
-		
 	}
 
 	private void generatePalette() {

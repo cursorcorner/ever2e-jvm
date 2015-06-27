@@ -39,16 +39,10 @@ System.out.println(cpu.getOpcodeString()+"   "+cpu.getRegister().toString());
 
 	@Override
 	public void coldRestart() throws HardwareException {
-		warmRestart();
-	}
-
-	@Override
-	public void warmRestart() throws HardwareException {
 		lastUnits = -1;
 		memBuf = new int [memory.getMaxAddress()];
 		for( int i = 0; i<memory.getMaxAddress(); i++ )
 			memBuf[i] = memory.getByte(i);
 	}
-
 	
 }

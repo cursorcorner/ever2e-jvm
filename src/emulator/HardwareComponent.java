@@ -10,10 +10,4 @@ public interface HardwareComponent {
 	 */
 	void coldRestart() throws HardwareException;
 	
-	/**
-	 * Simulates events during a warm-restart event such as a hardware reset
-	 * @throws HardwareException
-	 */
-	void warmRestart() throws HardwareException;
-	
 }

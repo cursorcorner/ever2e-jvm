@@ -21,10 +21,6 @@ public class Memory8 implements HardwareComponent {
 		address = new byte[size];
 	}
 
-	@Override
-	public void warmRestart() throws HardwareException {
-	}
-
 	public int getByte( int address ) {
 		return Byte.toUnsignedInt(this.address[address]);
 	}

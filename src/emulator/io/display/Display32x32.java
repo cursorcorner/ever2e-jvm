@@ -95,8 +95,4 @@ public class Display32x32 extends DisplayWindow {
 	public void coldRestart() throws HardwareException {
 	}
 
-	@Override
-	public void warmRestart() throws HardwareException {
-	}
-
 }

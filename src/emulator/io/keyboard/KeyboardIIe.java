@@ -373,7 +373,8 @@ public class KeyboardIIe extends Keyboard {
 		case KEY_MASK_F12|KEY_MASK_CTRL:
 		case KEY_MASK_F12|KEY_MASK_CTRL|KEY_MASK_SHIFT:
 			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
-		
+			keyQueue.clear();
+
 		}
 
 	}
@@ -382,10 +383,6 @@ public class KeyboardIIe extends Keyboard {
 	public void coldRestart() throws HardwareException {
 		keyEventQueue = new ConcurrentLinkedQueue<>();
 		keyQueue = new LinkedList<>();
-	}
-
-	@Override
-	public void warmRestart() throws HardwareException {
 	}
 
 }
