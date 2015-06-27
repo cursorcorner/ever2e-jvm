@@ -10,10 +10,10 @@ public class Emulator {
 	protected PriorityQueue<HardwareManager> hardwareManagerQueue;
 	protected int granularityBitsPerSecond;
 	
-	public Emulator(PriorityQueue<HardwareManager> hardwareManagerQueue, int granularityBitsPerSecond)
+	public Emulator(PriorityQueue<HardwareManager> hardwareManagerQueue, int granularityBitsPerMs)
 			throws HardwareException {
 		this.hardwareManagerQueue = hardwareManagerQueue;
-		this.granularityBitsPerSecond = granularityBitsPerSecond;
+		this.granularityBitsPerSecond = granularityBitsPerMs;
 		coldReset();
 	}
 

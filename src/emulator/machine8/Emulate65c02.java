@@ -9,8 +9,8 @@ import emulator.machine.Emulator;
 public class Emulate65c02 extends Emulator {
 
 	public Emulate65c02(PriorityQueue<HardwareManager> hardwareManagerQueue,
-			int granularityBitsPerSecond) throws HardwareException {
-		super(hardwareManagerQueue, granularityBitsPerSecond);
+			int granularityBitsPerMs) throws HardwareException {
+		super(hardwareManagerQueue, granularityBitsPerMs);
 	}
 
 /*	@Override

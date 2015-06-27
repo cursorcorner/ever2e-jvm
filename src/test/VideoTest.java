@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 
+import core.exception.HardwareException;
 import emulator.io.keyboard.KeyboardIIe;
 
 public class VideoTest {
@@ -15,15 +16,16 @@ public class VideoTest {
 	private Frame frame;
 	private Canvas canvas;
 	private MyBuffer image;
-	private static KeyboardIIe keyboard = new KeyboardIIe();
+	private static KeyboardIIe keyboard;
 
 	static int keyCode = 0;
 	
-	public VideoTest() throws InterruptedException{
+	public VideoTest() throws InterruptedException, HardwareException{
+		keyboard = new KeyboardIIe(0, null);
 		prepareGUI();
 	}
 
-	public static void main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException, HardwareException{
 		VideoTest  awtControlDemo = new VideoTest();
 		awtControlDemo.showCanvasDemo();
 	}
@@ -40,6 +42,7 @@ public class VideoTest {
 		image = new MyBuffer();
 		frame.add(canvas);
 		frame.addKeyListener(keyboard);
+		canvas.addKeyListener(keyboard);
 		frame.setVisible(true);  
 		canvas.repaint();
 		while( true ) {

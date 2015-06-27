@@ -1,25 +1,54 @@
 package emulator.io.keyboard;
 
 import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import core.cpu.cpu8.Cpu65c02;
+import core.exception.HardwareException;
 
 public class KeyboardIIe extends Keyboard {
 
+	private Cpu65c02 cpu;
+
+	private ConcurrentLinkedQueue<Integer> keyEventQueue = new ConcurrentLinkedQueue<>();
+	private Queue<Byte> keyQueue = new LinkedList<>();
+	private Toolkit toolKit = Toolkit.getDefaultToolkit();
+	private Clipboard clipboard = toolKit.getSystemClipboard();
+
 	private int modifierSet;
+	private int functionKeySet;
 	private boolean optionKey;
 	private boolean appleKey;
 	private byte keyCode;
 	private int keyCount;
 	private byte modIndex;
-	private Queue<Byte> keyQueue = new LinkedList<Byte>();
 	
-	private static final int CAPS_KEY_MASK = 0x00000001;
-	private static final int SHIFT_KEY_MASK = 0x00000002;
-	private static final int CTRL_KEY_MASK = 0x00000004;
+	private static final int KEY_MASK_CAPS = 0x00000001;
+	private static final int KEY_MASK_SHIFT = 0x00000002;
+	private static final int KEY_MASK_CTRL = 0x00000004;
+
+	private static final int KEY_MASK_F1 = 0x00000100;
+	private static final int KEY_MASK_F2 = 0x00000200;
+	private static final int KEY_MASK_F3 = 0x00000400;
+	private static final int KEY_MASK_F4 = 0x00000800;
+	private static final int KEY_MASK_F5 = 0x00001000;
+	private static final int KEY_MASK_F6 = 0x00002000;
+	private static final int KEY_MASK_F7 = 0x00004000;
+	private static final int KEY_MASK_F8 = 0x00008000;
+	private static final int KEY_MASK_F9 = 0x00010000;
+	private static final int KEY_MASK_F10 = 0x00020000;
+	private static final int KEY_MASK_F11 = 0x00040000;
+	private static final int KEY_MASK_F12 = 0x00080000;
 	
 	private static final Map<Integer, byte[]> KEY_MAP;
 	private static final byte[] MOD_MAP;
@@ -148,57 +177,78 @@ public class KeyboardIIe extends Keyboard {
 
 	}
 	
-	@Override
-	public void keyPressed( KeyEvent e ) {
+	public KeyboardIIe( long unitsPerCycle, Cpu65c02 cpu ) throws HardwareException {
+		super(unitsPerCycle);
+		coldRestart();
+		this.cpu = cpu;
+	}
 
-		int keyIndex = e.getKeyCode();
+	@Override
+	public void keyPressed( KeyEvent event ) {
+
+		int keyIndex = event.getKeyCode();
 		
 		switch( keyIndex ) {
 
 		// Modifiers
-		case KeyEvent.VK_SHIFT:        modifierSet |= SHIFT_KEY_MASK; return;
-		case KeyEvent.VK_CONTROL:      modifierSet |= CTRL_KEY_MASK; return;
+		case KeyEvent.VK_SHIFT:	       modifierSet |= KEY_MASK_SHIFT; return;
+		case KeyEvent.VK_CONTROL:      modifierSet |= KEY_MASK_CTRL; return;
 		case KeyEvent.VK_ALT:          appleKey = true; return;
 		case KeyEvent.VK_META:         optionKey = true; return;
-		case KeyEvent.VK_ALT_GRAPH:    return;
 
 		// Function keys
-		case KeyEvent.VK_F1:           return;
-		case KeyEvent.VK_F2:           return;
-		case KeyEvent.VK_F3:           return;
-		case KeyEvent.VK_F4:           return;
-		case KeyEvent.VK_F5:           return;
-		case KeyEvent.VK_F6:           return;
-		case KeyEvent.VK_F7:           return;
-		case KeyEvent.VK_F8:           return; 
-		case KeyEvent.VK_F9:           return;
-		case KeyEvent.VK_F10:          return;
-		case KeyEvent.VK_F11:          return;
-		case KeyEvent.VK_F12:          return;
+		case KeyEvent.VK_HELP:
+		case KeyEvent.VK_F1:           pushKeyEvent(KEY_MASK_F1); break;
+		case KeyEvent.VK_INSERT:
+		case KeyEvent.VK_F2:           pushKeyEvent(KEY_MASK_F2); break;
+		case KeyEvent.VK_F3:           pushKeyEvent(KEY_MASK_F3); break;
+		case KeyEvent.VK_F4:           pushKeyEvent(KEY_MASK_F4); break;
+		case KeyEvent.VK_F5:           pushKeyEvent(KEY_MASK_F5); break;
+		case KeyEvent.VK_F6:           pushKeyEvent(KEY_MASK_F6); break;
+		case KeyEvent.VK_F7:           pushKeyEvent(KEY_MASK_F7); break;
+		case KeyEvent.VK_F8:           pushKeyEvent(KEY_MASK_F8); break;
+		case KeyEvent.VK_F9:           pushKeyEvent(KEY_MASK_F9); break;
+		case KeyEvent.VK_F10:          pushKeyEvent(KEY_MASK_F10); break;
+		case KeyEvent.VK_F11:          pushKeyEvent(KEY_MASK_F11); break;
+		case KeyEvent.VK_F12:          pushKeyEvent(KEY_MASK_F12); break;
 
-		case KeyEvent.VK_PRINTSCREEN:  return;
-		case KeyEvent.VK_INSERT:       return;
-		case KeyEvent.VK_HELP:         return;
-
-		case KeyEvent.VK_COPY:         return;
-		case KeyEvent.VK_PASTE:        return;
-
-		}
-
-		byte[] keyCodeArray = KEY_MAP.get(keyIndex);
-		boolean capsLockDown = Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK);
-		modIndex = MOD_MAP[modifierSet|(capsLockDown?CAPS_KEY_MASK:0)];
-		if( keyCodeArray!=null ) {
-			if( !super.isKeyPressed(keyCodeArray[0]) ) {
-				if( keyQueue.size()==0 )
-					keyCode = (byte) (0x80|keyCodeArray[modIndex]);
-				keyPressed.set(keyCodeArray[0]);
-				keyCount++;
+		default:
+			byte[] keyCodeArray = KEY_MAP.get(keyIndex);
+			boolean capsLockDown = toolKit .getLockingKeyState(KeyEvent.VK_CAPS_LOCK);
+			modIndex = MOD_MAP[modifierSet|(capsLockDown?KEY_MASK_CAPS:0)];
+			if( keyCodeArray!=null ) {
+				if( !isKeyPressed(keyCodeArray[0]) ) {
+					if( keyQueue.size()==0 )
+						keyCode = (byte) (0x80|keyCodeArray[modIndex]);
+					keyPressed.set(keyCodeArray[0]);
+					keyCount++;
+				}
 			}
+			
 		}
 		
 	}
 	
+	private void pushKeyEvent( int eventKey ) {
+		if( !keyPressed.get(eventKey) )
+			pushPressedKeyEvent(eventKey);
+	}
+
+	private void pushPressedKeyEvent( int eventKey ) {
+		keyPressed.set(eventKey);
+		functionKeySet |= eventKey;
+		keyEventQueue.add(functionKeySet|modifierSet);
+	}
+
+	private void endPressedKeyEvent( int eventKey ) {
+		keyPressed.clear(eventKey);
+		functionKeySet &= ~eventKey;
+	}
+	
+	public Integer nextKeyEvent() {
+		return keyEventQueue.poll();
+	}
+
 	@Override
 	public void keyReleased( KeyEvent e ) {
 
@@ -207,44 +257,47 @@ public class KeyboardIIe extends Keyboard {
 		switch( keyIndex ) {
 
 		// Modifiers
-		case KeyEvent.VK_SHIFT:        modifierSet &= ~SHIFT_KEY_MASK; return;
-		case KeyEvent.VK_CONTROL:      modifierSet &= ~CTRL_KEY_MASK; return;
+		case KeyEvent.VK_SHIFT:        modifierSet &= ~KEY_MASK_SHIFT; return;
+		case KeyEvent.VK_CONTROL:      modifierSet &= ~KEY_MASK_CTRL; return;
 		case KeyEvent.VK_ALT:          appleKey = false; return;
 		case KeyEvent.VK_META:         optionKey = false; return;
-		case KeyEvent.VK_ALT_GRAPH:    return;
 
 		// Function keys
-		case KeyEvent.VK_F1:           return;
-		case KeyEvent.VK_F2:           return;
-		case KeyEvent.VK_F3:           return;
-		case KeyEvent.VK_F4:           return;
-		case KeyEvent.VK_F5:           return;
-		case KeyEvent.VK_F6:           return;
-		case KeyEvent.VK_F7:           return;
-		case KeyEvent.VK_F8:           return; 
-		case KeyEvent.VK_F9:           return;
-		case KeyEvent.VK_F10:          return;
-		case KeyEvent.VK_F11:          return;
-		case KeyEvent.VK_F12:          return;
+		case KeyEvent.VK_HELP:
+		case KeyEvent.VK_F1:           endPressedKeyEvent(KEY_MASK_F1); break;
+		case KeyEvent.VK_INSERT:
+		case KeyEvent.VK_F2:           endPressedKeyEvent(KEY_MASK_F2); break;
+		case KeyEvent.VK_F3:           endPressedKeyEvent(KEY_MASK_F3); break;
+		case KeyEvent.VK_F4:           endPressedKeyEvent(KEY_MASK_F4); break;
+		case KeyEvent.VK_F5:           endPressedKeyEvent(KEY_MASK_F5); break;
+		case KeyEvent.VK_F6:           endPressedKeyEvent(KEY_MASK_F6); break;
+		case KeyEvent.VK_F7:           endPressedKeyEvent(KEY_MASK_F7); break;
+		case KeyEvent.VK_F8:           endPressedKeyEvent(KEY_MASK_F8); break;
+		case KeyEvent.VK_F9:           endPressedKeyEvent(KEY_MASK_F9); break;
+		case KeyEvent.VK_F10:          endPressedKeyEvent(KEY_MASK_F10); break;
+		case KeyEvent.VK_F11:          endPressedKeyEvent(KEY_MASK_F11); break;
+		case KeyEvent.VK_F12:          endPressedKeyEvent(KEY_MASK_F12); break;
 
-		}
-
-		byte[] keyCodeArray = KEY_MAP.get(keyIndex);
-		if( keyCodeArray==null )
-			return;
-		int newKeyCode = keyCodeArray[0];
-		if( isKeyPressed(newKeyCode) ) {
-			keyPressed.clear(newKeyCode);
-			keyCount--;
-		}
+		default:
+			byte[] keyCodeArray = KEY_MAP.get(keyIndex);
+			if( keyCodeArray==null )
+				return;
+			int newKeyCode = keyCodeArray[0];
+			if( isKeyPressed(newKeyCode) ) {
+				keyPressed.clear(newKeyCode);
+				keyCount--;
+			}
+			break;
 		
+		}
+
 	}
 
 	private boolean isConsumed;
 	
 	public void toggleKeyQueue( boolean consume ) {
-		
-		if( keyQueue.size()>0 && consume!=isConsumed) {
+
+		if( keyQueue.size()>0 && consume!=isConsumed ) {
 			if( consume )
 				keyCode = (byte) (keyQueue.poll()|0x80);
 			else
@@ -284,7 +337,55 @@ public class KeyboardIIe extends Keyboard {
 	}
 
 	public boolean isShiftKey() {
-		return (modifierSet&SHIFT_KEY_MASK)!=0;
+		return (modifierSet&KEY_MASK_SHIFT)!=0;
+	}
+	
+	@Override
+	public void cycle() throws HardwareException {
+
+		incSleepCycles(1);
+		Integer keyEvent = nextKeyEvent();
+		if( keyEvent==null )
+			return;
+		switch( keyEvent ) {
+
+		case KEY_MASK_F2|KEY_MASK_SHIFT:
+			if( keyQueue.size()==0 ) {
+
+				Transferable contents = clipboard.getContents(null);
+				char [] pasteContent = null;
+				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
+					try {
+						pasteContent = contents.getTransferData(DataFlavor.stringFlavor).toString().toCharArray();
+						for( char c : pasteContent ) {
+							if( c=='\\' )
+								continue;
+							pushKeyCode(c==0x0a ? 0x0d:c);
+						}
+					}
+					catch( UnsupportedFlavorException | IOException e ) {
+						System.err.println("Warning: unsupported clipboard contents");
+					}
+				}
+			}
+			break;
+			
+		case KEY_MASK_F12|KEY_MASK_CTRL:
+		case KEY_MASK_F12|KEY_MASK_CTRL|KEY_MASK_SHIFT:
+			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
+		
+		}
+
+	}
+
+	@Override
+	public void coldRestart() throws HardwareException {
+		keyEventQueue = new ConcurrentLinkedQueue<>();
+		keyQueue = new LinkedList<>();
+	}
+
+	@Override
+	public void warmRestart() throws HardwareException {
 	}
 
 }

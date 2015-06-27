@@ -20,13 +20,13 @@ http://github.com/cursorcorner/ever2e-jvm
                                   KNOWN BUGS                                   
 -------------------------------------------------------------------------------
 
-Inserted keys can be overridden by key presses
 HGR artifacts not completely accurate
 GR artifacts not completely accurate
 	seems to be immune to offset fragmentation in hardware tests
 Speaker static at startup
 Does not successfully run IIe memory test
-
+Right horizontal scan line not matching up in 40-col modes
+HGR not kicking in until a second mode change occurs
 
 -------------------------------------------------------------------------------
                                  VERSION INFO                                   
@@ -38,5 +38,6 @@ Text / graphics modes supported with accurate color and pixel offset
 	other than GR40M, and GR80
 Key input matches IIe behavior
 	key repeat not yet complete
-	reset key not yet implemented
+	reset key hold-and-halt effect not yet implemented
 Memory bus complete
+Shift-insert or shift-F2 pastes contents of clipboard

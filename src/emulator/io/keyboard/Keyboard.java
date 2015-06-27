@@ -5,11 +5,14 @@ import java.awt.event.KeyListener;
 import java.util.BitSet;
 import java.util.PrimitiveIterator.OfInt;
 
-public abstract class Keyboard implements KeyListener {
+import emulator.HardwareManager;
+
+public abstract class Keyboard extends HardwareManager implements KeyListener {
 
 	protected BitSet keyPressed = new BitSet();
 
-	public Keyboard() {
+	public Keyboard( long unitsPerCycle ) {
+		super(unitsPerCycle);
 	}
 	
 	@Override

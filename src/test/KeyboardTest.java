@@ -8,6 +8,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.DefaultEditorKit;
 
+import core.exception.HardwareException;
 import emulator.io.keyboard.KeyboardIIe;
 
 public class KeyboardTest extends JFrame {
@@ -21,7 +22,7 @@ public class KeyboardTest extends JFrame {
 
 	static int keyCode = 0;
 	
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException, HardwareException {
 
 		KeyboardTest frame = new KeyboardTest();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -40,10 +41,10 @@ public class KeyboardTest extends JFrame {
 		
 	}
 	
-	KeyboardTest() {
+	KeyboardTest() throws HardwareException {
 
 		displayArea = new JTextArea();
-		keyboard = new KeyboardIIe();
+		keyboard = new KeyboardIIe(0, null);
 
 		displayArea.setEditable(false);
 		displayArea.addKeyListener(keyboard);
