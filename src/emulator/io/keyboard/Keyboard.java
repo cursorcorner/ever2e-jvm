@@ -2,14 +2,15 @@ package emulator.io.keyboard;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.BitSet;
-import java.util.PrimitiveIterator.OfInt;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 import emulator.HardwareManager;
 
 public abstract class Keyboard extends HardwareManager implements KeyListener {
 
-	protected BitSet keyPressed = new BitSet();
+	protected Set<Integer> keyPressed = new HashSet<>();
 
 	public Keyboard( long unitsPerCycle ) {
 		super(unitsPerCycle);
@@ -17,16 +18,16 @@ public abstract class Keyboard extends HardwareManager implements KeyListener {
 	
 	@Override
 	public void keyPressed( KeyEvent e ) {
-		keyPressed.set(e.getKeyCode());
+		keyPressed.add(e.getKeyCode());
 	}
 
 	@Override
 	public void keyReleased( KeyEvent e ) {
-		keyPressed.clear(e.getKeyCode());
+		keyPressed.remove(e.getKeyCode());
 	}
 	
 	public boolean isKeyPressed( int keyIndex ) {
-		return keyPressed.get(keyIndex);
+		return keyPressed.contains(keyIndex);
 	}
 	
 	public abstract int getHeldKeyCode();
@@ -41,7 +42,7 @@ public abstract class Keyboard extends HardwareManager implements KeyListener {
 
 	public String toString() {
 		StringBuilder str = new StringBuilder();
-		OfInt i = keyPressed.stream().iterator();
+		Iterator<Integer> i = keyPressed.iterator();
 		while( i.hasNext() ) 
 			str.append(i.next());
 		return str.toString();

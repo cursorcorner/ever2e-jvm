@@ -48,5 +48,5 @@ public class MemoryBus8 implements HardwareComponent {
 	public int getMaxAddress() {
 		return memory.getMaxAddress();
 	}
-	
+
 }

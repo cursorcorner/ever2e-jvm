@@ -87,7 +87,7 @@ public class Emulator8Coordinator {
 			bus = new MemoryBusDemo8(memory, keyboard);
 			bus.coldRestart();
 			cpuMultiplier /= 32d;
-			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			cpu.getRegister().setA(0);
 			cpu.getRegister().setX(0);
@@ -101,7 +101,7 @@ public class Emulator8Coordinator {
 			bus = new MemoryBusDemo8(memory, null);
 			bus.coldRestart();
 			cpuMultiplier /= 32d;
-			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.getRegister().setA(0);
 			cpu.getRegister().setX(0);
 			cpu.getRegister().setY(0);
@@ -112,7 +112,7 @@ public class Emulator8Coordinator {
 			rom16k.coldRestart();
 			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldRestart();
-			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldRestart();
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			hardwareManagerQueue.add(new DisplayConsoleDebug(cpu, (long) (unitsPerCycle/cpuMultiplier)));
@@ -124,7 +124,7 @@ public class Emulator8Coordinator {
 			rom16k.coldRestart();
 			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldRestart();
-			hardwareManagerQueue.add(cpu = new Cpu65c02(bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldRestart();
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			//hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier)));

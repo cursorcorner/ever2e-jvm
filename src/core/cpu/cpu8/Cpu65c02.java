@@ -3,6 +3,7 @@ package core.cpu.cpu8;
 import core.cpu.cpu8.Register.StatusRegister;
 import core.exception.HardwareException;
 import core.memory.memory8.MemoryBus8;
+import core.memory.memory8.MemoryBusIIe;
 import emulator.HardwareManager;
 
 /* Copyright (C) 2012-2015 Shane Reilly
@@ -33,12 +34,13 @@ public class Cpu65c02 extends HardwareManager {
 	private Opcode opcode;
 	
 	private Register reg = new Register();
-	private MemoryBus8 memory;
+	private MemoryBusIIe memory;
 
 	private int cycleCount;
 	private int idleCycle;
 
 	private Opcode interruptPending;
+	private boolean isHalted;
 	
 	private static final int STACK_PAGE = 0x100;
 	
@@ -49,12 +51,11 @@ public class Cpu65c02 extends HardwareManager {
 
 	// See Sather 4-27 for complete instruction cycle breakdown
 	// See Sather C-10 for reference to NOP cycle times / sizes
-
 	
 	public static final Opcode INTERRUPT_IRQ = new Opcode( null, OpcodeMnemonic.IRQ, AddressMode.IMP, 0, 6 );  /// TODO: Verify cycle time
 	public static final Opcode INTERRUPT_NMI = new Opcode( null, OpcodeMnemonic.NMI, AddressMode.IMP, 0, 6 );  /// TODO: Verify cycle time
 	public static final Opcode INTERRUPT_RES = new Opcode( null, OpcodeMnemonic.RES, AddressMode.IMP, 0, 6 );
-	public static final Opcode INTERRUPT_HLT = new Opcode( null, OpcodeMnemonic.HLT, AddressMode.IMP, 0, 1 );
+	public static final Opcode INTERRUPT_HLT = new Opcode( null, OpcodeMnemonic.HLT, AddressMode.IMP, 0, 6 );
 
 	/// TODO: Fill these in and verify
 	// * ADD 1 to N if page boundary is crossed
@@ -402,7 +403,7 @@ public class Cpu65c02 extends HardwareManager {
 			cycleCount++;
 	}
 
-	public Cpu65c02( MemoryBus8 memory, long unitsPerCycle ) {
+	public Cpu65c02( MemoryBusIIe memory, long unitsPerCycle ) {
 		super(unitsPerCycle);
 		this.memory = memory;
 	}
@@ -1131,12 +1132,18 @@ public class Cpu65c02 extends HardwareManager {
 				reg.setP(StatusRegister.I);    // Set interrupt disable
 				reg.clearP(StatusRegister.D);  // Clear decimal flag
 				newPc = memory.getWord16LittleEndian(INT_RES_VECTOR_ADDR);
+				isHalted = false;
 				break;
 	
 			case HLT:
 				// Halt execution (reset key down)
-				throw new RuntimeException("memoryBus.warmReset() not implemented");
-				//break;
+				// _TEXT and _MIXED statuses are not modified by a reset interrupt
+				// Sather 7-3, Sather I-5 suggests the Apple II reset operates differently than the Apple IIe
+				if( !isHalted ) {
+					memory.warmRestart();
+					isHalted = true;
+				}
+				break;
 
 			default:
 				throw new RuntimeException("[Opcode "+opcode.getMnemonic().toString()+" not yet supported]");

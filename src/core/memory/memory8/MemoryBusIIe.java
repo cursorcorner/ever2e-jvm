@@ -56,6 +56,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 			state = false;
 		}
 		
+		public String toString() {
+			return new Boolean(state).toString();
+		}
+		
 	}
 	
 	public interface MemoryAction8 {
@@ -732,6 +736,31 @@ public class MemoryBusIIe extends MemoryBus8 {
 		memoryLayout.writeMem(address, value);
 	}
 
+
+	public void warmRestart() {
+		// Reset every switch except text and mixed
+		switch80Store.resetState();
+		switchHiRes.resetState();
+		switchRamRead.resetState();
+		switchRamWrt.resetState();
+		switchAltZp.resetState();
+		switchPage2.resetState();
+		switchBank1.resetState();
+		switchHRamRd.resetState();
+		switchHRamWrt.resetState();
+		switchPreWrite.resetState();
+		switchIntCxRom.resetState();
+		switchSlotC3Rom.resetState();
+		switchIntC8Rom.resetState();
+		switch80Col.resetState();
+		switchAltCharSet.resetState();
+		switchAn0.resetState();
+		switchAn1.resetState();
+		switchAn2.resetState();
+		switchAn3.resetState();
+		switchIteration++;
+	}
+	
 	@Override
 	public void coldRestart() throws HardwareException {
 		
@@ -748,9 +777,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		switchRamRead = new SwitchState();
 		switchRamWrt = new SwitchState();
 		switchAltZp = new SwitchState();
-		switchText = new SwitchState();
 		switchPage2 = new SwitchState();
-		switchMixed = new SwitchState();
 		switchBank1 = new SwitchState();
 		switchHRamRd = new SwitchState();
 		switchHRamWrt =  new SwitchState();
@@ -765,6 +792,8 @@ public class MemoryBusIIe extends MemoryBus8 {
 		switchAn2 = new SwitchState();
 		switchAn3 = new SwitchState();
 		switchSpeakerToggle = new SwitchState();
+		switchText = new SwitchState();
+		switchMixed = new SwitchState();
 		
 		memoryLayout = new MemoryBlock8(0x0000, 0xffff, 8);
 	
@@ -1245,13 +1274,6 @@ public class MemoryBusIIe extends MemoryBus8 {
 		accessCount = 0;
 		toggleMod = 0;
 		
-	}
-
-	void warmReset()
-	{
-		// _TEXT and _MIXED statuses are not modified by a reset interrupt
-		switchState &= _TEXT | _MIXED;  // Sather 7-3, Sather I-5 suggests the Apple II reset operates differently than the Apple IIe
-		_commitSwitches();
 	}
 
 	Uint8 _randRead()

@@ -32,6 +32,7 @@ public class KeyboardIIe extends Keyboard {
 	private byte keyCode;
 	private int keyCount;
 	private byte modIndex;
+	private boolean isHalted;
 	
 	private static final int KEY_MASK_CAPS = 0x00000001;
 	private static final int KEY_MASK_SHIFT = 0x00000002;
@@ -49,9 +50,12 @@ public class KeyboardIIe extends Keyboard {
 	private static final int KEY_MASK_F10 = 0x00020000;
 	private static final int KEY_MASK_F11 = 0x00040000;
 	private static final int KEY_MASK_F12 = 0x00080000;
+	private static final int KEY_EVENT_RESET_PRESS = 0x40040000;
+	private static final int KEY_EVENT_RESET_RELEASE = 0x80040000;
 	
 	private static final Map<Integer, byte[]> KEY_MAP;
 	private static final byte[] MOD_MAP;
+
 	static {
 
 		// Logical mod-key combinations corresponding to the array index used
@@ -197,9 +201,7 @@ public class KeyboardIIe extends Keyboard {
 		case KeyEvent.VK_META:         optionKey = true; return;
 
 		// Function keys
-		case KeyEvent.VK_HELP:
 		case KeyEvent.VK_F1:           pushKeyEvent(KEY_MASK_F1); break;
-		case KeyEvent.VK_INSERT:
 		case KeyEvent.VK_F2:           pushKeyEvent(KEY_MASK_F2); break;
 		case KeyEvent.VK_F3:           pushKeyEvent(KEY_MASK_F3); break;
 		case KeyEvent.VK_F4:           pushKeyEvent(KEY_MASK_F4); break;
@@ -209,7 +211,13 @@ public class KeyboardIIe extends Keyboard {
 		case KeyEvent.VK_F8:           pushKeyEvent(KEY_MASK_F8); break;
 		case KeyEvent.VK_F9:           pushKeyEvent(KEY_MASK_F9); break;
 		case KeyEvent.VK_F10:          pushKeyEvent(KEY_MASK_F10); break;
-		case KeyEvent.VK_F11:          pushKeyEvent(KEY_MASK_F11); break;
+		case KeyEvent.VK_F11:
+			if( (modifierSet&KEY_MASK_CTRL)!=0 && !isHalted ) {
+				isHalted = true;
+				keyEventQueue.add(KEY_EVENT_RESET_PRESS);
+			}
+			break;
+		case KeyEvent.VK_INSERT:
 		case KeyEvent.VK_F12:          pushKeyEvent(KEY_MASK_F12); break;
 
 		default:
@@ -220,7 +228,7 @@ public class KeyboardIIe extends Keyboard {
 				if( !isKeyPressed(keyCodeArray[0]) ) {
 					if( keyQueue.size()==0 )
 						keyCode = (byte) (0x80|keyCodeArray[modIndex]);
-					keyPressed.set(keyCodeArray[0]);
+					keyPressed.add((int) keyCodeArray[0]);
 					keyCount++;
 				}
 			}
@@ -229,19 +237,21 @@ public class KeyboardIIe extends Keyboard {
 		
 	}
 	
-	private void pushKeyEvent( int eventKey ) {
-		if( !keyPressed.get(eventKey) )
-			pushPressedKeyEvent(eventKey);
+	private int pushKeyEvent( int eventKey ) {
+		if( !keyPressed.contains(eventKey) )
+			return pushPressedKeyEvent(eventKey);
+		return -1;
 	}
 
-	private void pushPressedKeyEvent( int eventKey ) {
-		keyPressed.set(eventKey);
+	private int pushPressedKeyEvent( int eventKey ) {
+		keyPressed.add(eventKey);
 		functionKeySet |= eventKey;
 		keyEventQueue.add(functionKeySet|modifierSet);
+		return functionKeySet|modifierSet;
 	}
 
 	private void endPressedKeyEvent( int eventKey ) {
-		keyPressed.clear(eventKey);
+		keyPressed.remove(eventKey);
 		functionKeySet &= ~eventKey;
 	}
 	
@@ -257,15 +267,19 @@ public class KeyboardIIe extends Keyboard {
 		switch( keyIndex ) {
 
 		// Modifiers
-		case KeyEvent.VK_SHIFT:        modifierSet &= ~KEY_MASK_SHIFT; return;
-		case KeyEvent.VK_CONTROL:      modifierSet &= ~KEY_MASK_CTRL; return;
-		case KeyEvent.VK_ALT:          appleKey = false; return;
-		case KeyEvent.VK_META:         optionKey = false; return;
+		case KeyEvent.VK_SHIFT:        modifierSet &= ~KEY_MASK_SHIFT; break;
+		case KeyEvent.VK_CONTROL:
+			modifierSet &= ~KEY_MASK_CTRL;
+			if( isHalted ) {
+				keyEventQueue.add(KEY_EVENT_RESET_RELEASE);
+				isHalted = false;
+			}
+			break;
+		case KeyEvent.VK_ALT:          appleKey = false; break;
+		case KeyEvent.VK_META:         optionKey = false; break;
 
 		// Function keys
-		case KeyEvent.VK_HELP:
 		case KeyEvent.VK_F1:           endPressedKeyEvent(KEY_MASK_F1); break;
-		case KeyEvent.VK_INSERT:
 		case KeyEvent.VK_F2:           endPressedKeyEvent(KEY_MASK_F2); break;
 		case KeyEvent.VK_F3:           endPressedKeyEvent(KEY_MASK_F3); break;
 		case KeyEvent.VK_F4:           endPressedKeyEvent(KEY_MASK_F4); break;
@@ -275,7 +289,13 @@ public class KeyboardIIe extends Keyboard {
 		case KeyEvent.VK_F8:           endPressedKeyEvent(KEY_MASK_F8); break;
 		case KeyEvent.VK_F9:           endPressedKeyEvent(KEY_MASK_F9); break;
 		case KeyEvent.VK_F10:          endPressedKeyEvent(KEY_MASK_F10); break;
-		case KeyEvent.VK_F11:          endPressedKeyEvent(KEY_MASK_F11); break;
+		case KeyEvent.VK_F11:
+			if( isHalted ) {
+				keyEventQueue.add(KEY_EVENT_RESET_RELEASE);
+				isHalted = false;
+			}
+			break;
+		case KeyEvent.VK_INSERT:
 		case KeyEvent.VK_F12:          endPressedKeyEvent(KEY_MASK_F12); break;
 
 		default:
@@ -284,7 +304,7 @@ public class KeyboardIIe extends Keyboard {
 				return;
 			int newKeyCode = keyCodeArray[0];
 			if( isKeyPressed(newKeyCode) ) {
-				keyPressed.clear(newKeyCode);
+				keyPressed.remove(newKeyCode);
 				keyCount--;
 			}
 			break;
@@ -347,11 +367,25 @@ public class KeyboardIIe extends Keyboard {
 		Integer keyEvent = nextKeyEvent();
 		if( keyEvent==null )
 			return;
-		switch( keyEvent ) {
+System.out.println(keyEvent+" "+KEY_EVENT_RESET_PRESS);
 
-		case KEY_MASK_F2|KEY_MASK_SHIFT:
+	switch( keyEvent ) {
+
+		case KEY_EVENT_RESET_PRESS:
+			cpu.setInterruptPending(Cpu65c02.INTERRUPT_HLT);
+			keyQueue.clear();
+			break;
+
+		case KEY_EVENT_RESET_RELEASE:
+			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
+			break;
+
+		case KEY_MASK_F12:
+			keyQueue.clear();
+			break;
+			
+		case KEY_MASK_F12|KEY_MASK_SHIFT:
 			if( keyQueue.size()==0 ) {
-
 				Transferable contents = clipboard.getContents(null);
 				char [] pasteContent = null;
 				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
@@ -362,19 +396,13 @@ public class KeyboardIIe extends Keyboard {
 								continue;
 							pushKeyCode(c==0x0a ? 0x0d:c);
 						}
-					}
-					catch( UnsupportedFlavorException | IOException e ) {
+					} catch( UnsupportedFlavorException | IOException e ) {
 						System.err.println("Warning: unsupported clipboard contents");
 					}
 				}
 			}
 			break;
 			
-		case KEY_MASK_F12|KEY_MASK_CTRL:
-		case KEY_MASK_F12|KEY_MASK_CTRL|KEY_MASK_SHIFT:
-			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
-			keyQueue.clear();
-
 		}
 
 	}
@@ -383,6 +411,7 @@ public class KeyboardIIe extends Keyboard {
 	public void coldRestart() throws HardwareException {
 		keyEventQueue = new ConcurrentLinkedQueue<>();
 		keyQueue = new LinkedList<>();
+		isHalted = false;
 	}
 
 }
