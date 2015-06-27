@@ -367,7 +367,8 @@ public class KeyboardIIe extends Keyboard {
 		Integer keyEvent = nextKeyEvent();
 		if( keyEvent==null )
 			return;
-System.out.println(keyEvent+" "+KEY_EVENT_RESET_PRESS);
+		
+System.out.println(keyEvent);
 
 	switch( keyEvent ) {
 
@@ -391,11 +392,8 @@ System.out.println(keyEvent+" "+KEY_EVENT_RESET_PRESS);
 				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
 					try {
 						pasteContent = contents.getTransferData(DataFlavor.stringFlavor).toString().toCharArray();
-						for( char c : pasteContent ) {
-							if( c=='\\' )
-								continue;
+						for( char c : pasteContent )
 							pushKeyCode(c==0x0a ? 0x0d:c);
-						}
 					} catch( UnsupportedFlavorException | IOException e ) {
 						System.err.println("Warning: unsupported clipboard contents");
 					}

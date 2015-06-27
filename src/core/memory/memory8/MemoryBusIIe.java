@@ -15,28 +15,28 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private KeyboardIIe keyboard;
 	private DisplayIIe monitor;
 	
-	private SwitchState switch80Store;
-	private SwitchState switchHiRes;
-	private SwitchState switchRamRead;
-	private SwitchState switchRamWrt;
-	private SwitchState switchText;
-	private SwitchState switchPage2;
-	private SwitchState switchMixed;
-	private SwitchState switchAltZp;
-	private SwitchState switchBank1;
-	private SwitchState switchHRamRd;
-	private SwitchState switchHRamWrt;
-	private SwitchState switchPreWrite;
-	private SwitchState switchIntCxRom;
-	private SwitchState switchSlotC3Rom;
-	private SwitchState switchIntC8Rom;
-	private SwitchState switch80Col;
-	private SwitchState switchAltCharSet;
-	private SwitchState switchAn0;
-	private SwitchState switchAn1;
-	private SwitchState switchAn2;
-	private SwitchState switchAn3;
-	private SwitchState switchSpeakerToggle;
+	private SwitchState switch80Store = new SwitchState();
+	private SwitchState switchHiRes = new SwitchState();
+	private SwitchState switchRamRead = new SwitchState();
+	private SwitchState switchRamWrt = new SwitchState();
+	private SwitchState switchText = new SwitchState();
+	private SwitchState switchPage2 = new SwitchState();
+	private SwitchState switchMixed = new SwitchState();
+	private SwitchState switchAltZp = new SwitchState();
+	private SwitchState switchBank1 = new SwitchState();
+	private SwitchState switchHRamRd = new SwitchState();
+	private SwitchState switchHRamWrt = new SwitchState();
+	private SwitchState switchPreWrite = new SwitchState();
+	private SwitchState switchIntCxRom = new SwitchState();
+	private SwitchState switchSlotC3Rom = new SwitchState();
+	private SwitchState switchIntC8Rom = new SwitchState();
+	private SwitchState switch80Col = new SwitchState();
+	private SwitchState switchAltCharSet = new SwitchState();
+	private SwitchState switchAn0 = new SwitchState();
+	private SwitchState switchAn1 = new SwitchState();
+	private SwitchState switchAn2 = new SwitchState();
+	private SwitchState switchAn3 = new SwitchState();
+	private SwitchState switchSpeakerToggle = new SwitchState();
 
 	private int switchIteration;
 
@@ -771,29 +771,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 			memory.setByte(i*4+2, 0x00);
 			memory.setByte(i*4+3, 0x00);
 		}
-		
-		switch80Store = new SwitchState();
-		switchHiRes = new SwitchState();
-		switchRamRead = new SwitchState();
-		switchRamWrt = new SwitchState();
-		switchAltZp = new SwitchState();
-		switchPage2 = new SwitchState();
-		switchBank1 = new SwitchState();
-		switchHRamRd = new SwitchState();
-		switchHRamWrt =  new SwitchState();
-		switchPreWrite = new SwitchState();
-		switchIntCxRom = new SwitchState();
-		switchSlotC3Rom = new SwitchState();
-		switchIntC8Rom = new SwitchState();
-		switch80Col = new SwitchState();
-		switchAltCharSet = new SwitchState();
-		switchAn0 = new SwitchState();
-		switchAn1 = new SwitchState();
-		switchAn2 = new SwitchState();
-		switchAn3 = new SwitchState();
-		switchSpeakerToggle = new SwitchState();
-		switchText = new SwitchState();
-		switchMixed = new SwitchState();
+
+		switchText.resetState();
+		switchMixed.resetState();
+		warmRestart();
 		
 		memoryLayout = new MemoryBlock8(0x0000, 0xffff, 8);
 	
