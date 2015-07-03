@@ -1246,10 +1246,8 @@ public class DisplayIIe extends DisplayWindow {
 		// Character setting for text modes
 		if( memoryBus.isAltCharSet() )
 			textMod = 2;
-		else if( (flashToggle&0x10)!=0 )
-			textMod = 1;
 		else
-			textMod = 0;
+			textMod = (flashToggle&0x10)!=0 ? 1:0;
 
 		// HIRES40M / LORES40M - Sather 8-22
 		// Sather does not fully indicate whether TEXT40 bytes always ignore bit 8 despite the status of AN3
@@ -1327,6 +1325,11 @@ public class DisplayIIe extends DisplayWindow {
 					flipPage();
 					cleanEdges();
 				}
+				if( tracer.isVbl() ) {
+					flashToggle++;
+					if( textMod<2 )
+						textMod = (flashToggle&0x10)!=0 ? 1:0;
+				}
 				return;
 			}
 		} else {
@@ -1334,9 +1337,6 @@ public class DisplayIIe extends DisplayWindow {
 			if( tracer.isBlank() )
 				return;
 		}
-
-		if( textMod<2 && (flashToggle^(++flashToggle)&0x10)!=0 )
-			textMod |= (flashToggle&0x10)!=0 ? 1:0;
 
 		int switchIteration = memoryBus.getSwitchIteration();
 		if( lastSwitchIteration!=switchIteration ) {
