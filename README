@@ -20,12 +20,10 @@ http://github.com/cursorcorner/ever2e-jvm
                                   KNOWN BUGS                                   
 -------------------------------------------------------------------------------
 
-GR artifacts not completely accurate
-	seems to be immune to offset fragmentation in hardware tests
-Right horizontal scan line not matching up in 40-col modes
 Speaker static at startup
 Does not successfully pass IIe memory test
 Needs to reset keyboard when focus is regained to avoid stuck-keys
+Need to swap memory bus outputs from video to keyboard out for 16 read types
 
 
 -------------------------------------------------------------------------------
@@ -37,7 +35,7 @@ CPU with accurate cycle timing, synced with emulated monitor refresh rate
 Memory bus
 	missing paddle
 	missing cassette switches or stand-ins
-	need to swap outputs from video to keyboard out for 16 read types
+	missing slot card methods and low-memory read routines
 Text / graphics modes with accurate color and pixel offset
 Key input matches IIe behavior and timing
 Shift-insert or shift-F2 pastes contents of clipboard (can be cancelled with ctrl-reset or F12)

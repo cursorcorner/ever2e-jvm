@@ -1416,7 +1416,9 @@ public class DisplayIIe extends DisplayWindow {
 
 		colorWord |= gfxWord<<colorWordSize;
 		colorWordSize += 14;
-
+		if( xPaint==552 )
+			colorWordSize += 3;
+		
 		BufferedImage display = rawDisplay[bufferPage];
 		while( colorWordSize>=4 ) {
 			int colorCode = palIndex+(colorWord&0x0f);
