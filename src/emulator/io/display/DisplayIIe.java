@@ -8,28 +8,25 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.util.Random;
 
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBusIIe;
+import emulator.io.display.display8.ScanlineTracer8;
+import emulator.io.display.display8.TraceMap8;
 import emulator.io.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow {
 
-	private Random rand = new Random();
-	private int lastReadValue;
-	
+	private ScanlineTracer8 tracer;
+
 	private Frame frame;
 	private Canvas32x32 canvas;
 	private MemoryBusIIe memoryBus;
 	private Memory8 memory;
 
 	private int textMod;
-	private boolean mixedMode;
 	private DisplayType displayType;
-	private DisplayType displayTypeTop;
-	private DisplayType displayTypeBottom;
 	private BufferedImage [] rawDisplay;
 
 	private int xOff = (640-XSIZE)>>1;
@@ -37,18 +34,20 @@ public class DisplayIIe extends DisplayWindow {
 
 	private int bufferPage;
 	private int paintPage;
-	private int colorWord;  
-	private int flashToggle = 0;
-	private int offset40 = 0;
+	private int xPaint;
+	private int yPaint;
+	private int colorWord;
 	private int colorWordSize;
 	private int shiftBit;
+	private int offset40 = 0;
+
+	private int flashToggle = 0;
 	private int lastSwitchIteration;
-	private int page;
-	private int xPos;
+
 	private int [] pal;
 	private int palIndex;
 	private int hueShift = -32;
-	
+
 	private static final int PAL_INDEX_COLOR = 0;
 	private static final int PAL_INDEX_MONO = 48;
 	private static final int PAL_INDEX_MONO_GREEN = 2*48;
@@ -57,6 +56,314 @@ public class DisplayIIe extends DisplayWindow {
 
 	private static final int XSIZE = 567;
 	private static final int YSIZE = 384;
+	private static final int SPLIT_DRAW = 320;
+
+	public static final TraceMap8 LO40_TRACE;
+	public static final TraceMap8 HI40_TRACE;
+
+	static {
+
+		LO40_TRACE = new TraceMap8(7, 262);
+		LO40_TRACE.setPageBit(10);
+		LO40_TRACE.addScanlineTrace(0, 103, 8);
+		LO40_TRACE.addScanlineTrace(1, 103, 8);
+		LO40_TRACE.addScanlineTrace(2, 103, 8);
+		LO40_TRACE.addScanlineTrace(3, 103, 8);
+		LO40_TRACE.addScanlineTrace(4, 103, 8);
+		LO40_TRACE.addScanlineTrace(5, 103, 8);
+		LO40_TRACE.addScanlineTrace(6, 103, 8);
+		LO40_TRACE.addScanlineTrace(7, 103, 14);
+		LO40_TRACE.addScanlineTrace(0, 103, 8);
+		LO40_TRACE.addScanlineTrace(1, 103, 8);
+		LO40_TRACE.addScanlineTrace(2, 103, 8);
+		LO40_TRACE.addScanlineTrace(3, 103, 8);
+		LO40_TRACE.addScanlineTrace(4, 103, 8);
+		LO40_TRACE.addScanlineTrace(5, 103, 8);
+		LO40_TRACE.addScanlineTrace(6, 103, 8);
+		LO40_TRACE.addScanlineTrace(7, 103, 8);
+		LO40_TRACE.addScanlineTrace(0, 15, 8);
+		LO40_TRACE.addScanlineTrace(1, 15, 8);
+		LO40_TRACE.addScanlineTrace(2, 15, 8);
+		LO40_TRACE.addScanlineTrace(3, 15, 8);
+		LO40_TRACE.addScanlineTrace(4, 15, 8);
+		LO40_TRACE.addScanlineTrace(5, 15, 8);
+		LO40_TRACE.addScanlineTrace(6, 15, 8);
+		LO40_TRACE.addScanlineTrace(7, 15, 8);
+		LO40_TRACE.addScanlineTrace(0, 55, 8);
+		LO40_TRACE.addScanlineTrace(1, 55, 8);
+		LO40_TRACE.addScanlineTrace(2, 55, 8);
+		LO40_TRACE.addScanlineTrace(3, 55, 8);
+		LO40_TRACE.addScanlineTrace(4, 55, 8);
+		LO40_TRACE.addScanlineTrace(5, 55, 8);
+		LO40_TRACE.addScanlineTrace(6, 55, 8);
+		LO40_TRACE.addScanlineTrace(7, 55, 8);
+
+		HI40_TRACE = new TraceMap8(7, 262);
+		HI40_TRACE.setPageBit(13);
+		HI40_TRACE.addScanlineTrace(0, 103);
+		HI40_TRACE.addScanlineTrace(8, 103);
+		HI40_TRACE.addScanlineTrace(16, 103);
+		HI40_TRACE.addScanlineTrace(24, 103);
+		HI40_TRACE.addScanlineTrace(32, 103);
+		HI40_TRACE.addScanlineTrace(40, 103);
+		HI40_TRACE.addScanlineTrace(48, 103);
+		HI40_TRACE.addScanlineTrace(56, 103);
+		HI40_TRACE.addScanlineTrace(1, 103);
+		HI40_TRACE.addScanlineTrace(9, 103);
+		HI40_TRACE.addScanlineTrace(17, 103);
+		HI40_TRACE.addScanlineTrace(25, 103);
+		HI40_TRACE.addScanlineTrace(33, 103);
+		HI40_TRACE.addScanlineTrace(41, 103);
+		HI40_TRACE.addScanlineTrace(49, 103);
+		HI40_TRACE.addScanlineTrace(57, 103);
+		HI40_TRACE.addScanlineTrace(2, 103);
+		HI40_TRACE.addScanlineTrace(10, 103);
+		HI40_TRACE.addScanlineTrace(18, 103);
+		HI40_TRACE.addScanlineTrace(26, 103);
+		HI40_TRACE.addScanlineTrace(34, 103);
+		HI40_TRACE.addScanlineTrace(42, 103);
+		HI40_TRACE.addScanlineTrace(50, 103);
+		HI40_TRACE.addScanlineTrace(58, 103);
+		HI40_TRACE.addScanlineTrace(3, 103);
+		HI40_TRACE.addScanlineTrace(11, 103);
+		HI40_TRACE.addScanlineTrace(19, 103);
+		HI40_TRACE.addScanlineTrace(27, 103);
+		HI40_TRACE.addScanlineTrace(35, 103);
+		HI40_TRACE.addScanlineTrace(43, 103);
+		HI40_TRACE.addScanlineTrace(51, 103);
+		HI40_TRACE.addScanlineTrace(59, 103);
+		HI40_TRACE.addScanlineTrace(4, 103);
+		HI40_TRACE.addScanlineTrace(12, 103);
+		HI40_TRACE.addScanlineTrace(20, 103);
+		HI40_TRACE.addScanlineTrace(28, 103);
+		HI40_TRACE.addScanlineTrace(36, 103);
+		HI40_TRACE.addScanlineTrace(44, 103);
+		HI40_TRACE.addScanlineTrace(52, 103);
+		HI40_TRACE.addScanlineTrace(60, 103);
+		HI40_TRACE.addScanlineTrace(5, 103);
+		HI40_TRACE.addScanlineTrace(13, 103);
+		HI40_TRACE.addScanlineTrace(21, 103);
+		HI40_TRACE.addScanlineTrace(29, 103);
+		HI40_TRACE.addScanlineTrace(37, 103);
+		HI40_TRACE.addScanlineTrace(45, 103);
+		HI40_TRACE.addScanlineTrace(53, 103);
+		HI40_TRACE.addScanlineTrace(61, 103);
+		HI40_TRACE.addScanlineTrace(6, 103);
+		HI40_TRACE.addScanlineTrace(14, 103);
+		HI40_TRACE.addScanlineTrace(22, 103);
+		HI40_TRACE.addScanlineTrace(30, 103);
+		HI40_TRACE.addScanlineTrace(38, 103);
+		HI40_TRACE.addScanlineTrace(46, 103);
+		HI40_TRACE.addScanlineTrace(54, 103);
+		HI40_TRACE.addScanlineTrace(62, 103);
+		HI40_TRACE.addScanlineTrace(7, 103);
+		HI40_TRACE.addScanlineTrace(15, 103);
+		HI40_TRACE.addScanlineTrace(23, 103);
+		HI40_TRACE.addScanlineTrace(31, 103);
+		HI40_TRACE.addScanlineTrace(39, 103);
+		HI40_TRACE.addScanlineTrace(47, 103);
+		HI40_TRACE.addScanlineTrace(55, 103);
+		HI40_TRACE.addScanlineTrace(63, 103);
+		HI40_TRACE.addScanlineTrace(23, 103);
+		HI40_TRACE.addScanlineTrace(31, 103);
+		HI40_TRACE.addScanlineTrace(39, 103);
+		HI40_TRACE.addScanlineTrace(47, 103);
+		HI40_TRACE.addScanlineTrace(55, 103);
+		HI40_TRACE.addScanlineTrace(63, 103);
+		HI40_TRACE.addScanlineTrace(0, 103);
+		HI40_TRACE.addScanlineTrace(8, 103);
+		HI40_TRACE.addScanlineTrace(16, 103);
+		HI40_TRACE.addScanlineTrace(24, 103);
+		HI40_TRACE.addScanlineTrace(32, 103);
+		HI40_TRACE.addScanlineTrace(40, 103);
+		HI40_TRACE.addScanlineTrace(48, 103);
+		HI40_TRACE.addScanlineTrace(56, 103);
+		HI40_TRACE.addScanlineTrace(1, 103);
+		HI40_TRACE.addScanlineTrace(9, 103);
+		HI40_TRACE.addScanlineTrace(17, 103);
+		HI40_TRACE.addScanlineTrace(25, 103);
+		HI40_TRACE.addScanlineTrace(33, 103);
+		HI40_TRACE.addScanlineTrace(41, 103);
+		HI40_TRACE.addScanlineTrace(49, 103);
+		HI40_TRACE.addScanlineTrace(57, 103);
+		HI40_TRACE.addScanlineTrace(2, 103);
+		HI40_TRACE.addScanlineTrace(10, 103);
+		HI40_TRACE.addScanlineTrace(18, 103);
+		HI40_TRACE.addScanlineTrace(26, 103);
+		HI40_TRACE.addScanlineTrace(34, 103);
+		HI40_TRACE.addScanlineTrace(42, 103);
+		HI40_TRACE.addScanlineTrace(50, 103);
+		HI40_TRACE.addScanlineTrace(58, 103);
+		HI40_TRACE.addScanlineTrace(3, 103);
+		HI40_TRACE.addScanlineTrace(11, 103);
+		HI40_TRACE.addScanlineTrace(19, 103);
+		HI40_TRACE.addScanlineTrace(27, 103);
+		HI40_TRACE.addScanlineTrace(35, 103);
+		HI40_TRACE.addScanlineTrace(43, 103);
+		HI40_TRACE.addScanlineTrace(51, 103);
+		HI40_TRACE.addScanlineTrace(59, 103);
+		HI40_TRACE.addScanlineTrace(4, 103);
+		HI40_TRACE.addScanlineTrace(12, 103);
+		HI40_TRACE.addScanlineTrace(20, 103);
+		HI40_TRACE.addScanlineTrace(28, 103);
+		HI40_TRACE.addScanlineTrace(36, 103);
+		HI40_TRACE.addScanlineTrace(44, 103);
+		HI40_TRACE.addScanlineTrace(52, 103);
+		HI40_TRACE.addScanlineTrace(60, 103);
+		HI40_TRACE.addScanlineTrace(5, 103);
+		HI40_TRACE.addScanlineTrace(13, 103);
+		HI40_TRACE.addScanlineTrace(21, 103);
+		HI40_TRACE.addScanlineTrace(29, 103);
+		HI40_TRACE.addScanlineTrace(37, 103);
+		HI40_TRACE.addScanlineTrace(45, 103);
+		HI40_TRACE.addScanlineTrace(53, 103);
+		HI40_TRACE.addScanlineTrace(61, 103);
+		HI40_TRACE.addScanlineTrace(6, 103);
+		HI40_TRACE.addScanlineTrace(14, 103);
+		HI40_TRACE.addScanlineTrace(22, 103);
+		HI40_TRACE.addScanlineTrace(30, 103);
+		HI40_TRACE.addScanlineTrace(38, 103);
+		HI40_TRACE.addScanlineTrace(46, 103);
+		HI40_TRACE.addScanlineTrace(54, 103);
+		HI40_TRACE.addScanlineTrace(62, 103);
+		HI40_TRACE.addScanlineTrace(7, 103);
+		HI40_TRACE.addScanlineTrace(15, 103);
+		HI40_TRACE.addScanlineTrace(23, 103);
+		HI40_TRACE.addScanlineTrace(31, 103);
+		HI40_TRACE.addScanlineTrace(39, 103);
+		HI40_TRACE.addScanlineTrace(47, 103);
+		HI40_TRACE.addScanlineTrace(55, 103);
+		HI40_TRACE.addScanlineTrace(63, 103);
+		HI40_TRACE.addScanlineTrace(0, 15);
+		HI40_TRACE.addScanlineTrace(8, 15);
+		HI40_TRACE.addScanlineTrace(16, 15);
+		HI40_TRACE.addScanlineTrace(24, 15);
+		HI40_TRACE.addScanlineTrace(32, 15);
+		HI40_TRACE.addScanlineTrace(40, 15);
+		HI40_TRACE.addScanlineTrace(48, 15);
+		HI40_TRACE.addScanlineTrace(56, 15);
+		HI40_TRACE.addScanlineTrace(1, 15);
+		HI40_TRACE.addScanlineTrace(9, 15);
+		HI40_TRACE.addScanlineTrace(17, 15);
+		HI40_TRACE.addScanlineTrace(25, 15);
+		HI40_TRACE.addScanlineTrace(33, 15);
+		HI40_TRACE.addScanlineTrace(41, 15);
+		HI40_TRACE.addScanlineTrace(49, 15);
+		HI40_TRACE.addScanlineTrace(57, 15);
+		HI40_TRACE.addScanlineTrace(2, 15);
+		HI40_TRACE.addScanlineTrace(10, 15);
+		HI40_TRACE.addScanlineTrace(18, 15);
+		HI40_TRACE.addScanlineTrace(26, 15);
+		HI40_TRACE.addScanlineTrace(34, 15);
+		HI40_TRACE.addScanlineTrace(42, 15);
+		HI40_TRACE.addScanlineTrace(50, 15);
+		HI40_TRACE.addScanlineTrace(58, 15);
+		HI40_TRACE.addScanlineTrace(3, 15);
+		HI40_TRACE.addScanlineTrace(11, 15);
+		HI40_TRACE.addScanlineTrace(19, 15);
+		HI40_TRACE.addScanlineTrace(27, 15);
+		HI40_TRACE.addScanlineTrace(35, 15);
+		HI40_TRACE.addScanlineTrace(43, 15);
+		HI40_TRACE.addScanlineTrace(51, 15);
+		HI40_TRACE.addScanlineTrace(59, 15);
+		HI40_TRACE.addScanlineTrace(4, 15);
+		HI40_TRACE.addScanlineTrace(12, 15);
+		HI40_TRACE.addScanlineTrace(20, 15);
+		HI40_TRACE.addScanlineTrace(28, 15);
+		HI40_TRACE.addScanlineTrace(36, 15);
+		HI40_TRACE.addScanlineTrace(44, 15);
+		HI40_TRACE.addScanlineTrace(52, 15);
+		HI40_TRACE.addScanlineTrace(60, 15);
+		HI40_TRACE.addScanlineTrace(5, 15);
+		HI40_TRACE.addScanlineTrace(13, 15);
+		HI40_TRACE.addScanlineTrace(21, 15);
+		HI40_TRACE.addScanlineTrace(29, 15);
+		HI40_TRACE.addScanlineTrace(37, 15);
+		HI40_TRACE.addScanlineTrace(45, 15);
+		HI40_TRACE.addScanlineTrace(53, 15);
+		HI40_TRACE.addScanlineTrace(61, 15);
+		HI40_TRACE.addScanlineTrace(6, 15);
+		HI40_TRACE.addScanlineTrace(14, 15);
+		HI40_TRACE.addScanlineTrace(22, 15);
+		HI40_TRACE.addScanlineTrace(30, 15);
+		HI40_TRACE.addScanlineTrace(38, 15);
+		HI40_TRACE.addScanlineTrace(46, 15);
+		HI40_TRACE.addScanlineTrace(54, 15);
+		HI40_TRACE.addScanlineTrace(62, 15);
+		HI40_TRACE.addScanlineTrace(7, 15);
+		HI40_TRACE.addScanlineTrace(15, 15);
+		HI40_TRACE.addScanlineTrace(23, 15);
+		HI40_TRACE.addScanlineTrace(31, 15);
+		HI40_TRACE.addScanlineTrace(39, 15);
+		HI40_TRACE.addScanlineTrace(47, 15);
+		HI40_TRACE.addScanlineTrace(55, 15);
+		HI40_TRACE.addScanlineTrace(63, 15);
+		HI40_TRACE.addScanlineTrace(0, 55);
+		HI40_TRACE.addScanlineTrace(8, 55);
+		HI40_TRACE.addScanlineTrace(16, 55);
+		HI40_TRACE.addScanlineTrace(24, 55);
+		HI40_TRACE.addScanlineTrace(32, 55);
+		HI40_TRACE.addScanlineTrace(40, 55);
+		HI40_TRACE.addScanlineTrace(48, 55);
+		HI40_TRACE.addScanlineTrace(56, 55);
+		HI40_TRACE.addScanlineTrace(1, 55);
+		HI40_TRACE.addScanlineTrace(9, 55);
+		HI40_TRACE.addScanlineTrace(17, 55);
+		HI40_TRACE.addScanlineTrace(25, 55);
+		HI40_TRACE.addScanlineTrace(33, 55);
+		HI40_TRACE.addScanlineTrace(41, 55);
+		HI40_TRACE.addScanlineTrace(49, 55);
+		HI40_TRACE.addScanlineTrace(57, 55);
+		HI40_TRACE.addScanlineTrace(2, 55);
+		HI40_TRACE.addScanlineTrace(10, 55);
+		HI40_TRACE.addScanlineTrace(18, 55);
+		HI40_TRACE.addScanlineTrace(26, 55);
+		HI40_TRACE.addScanlineTrace(34, 55);
+		HI40_TRACE.addScanlineTrace(42, 55);
+		HI40_TRACE.addScanlineTrace(50, 55);
+		HI40_TRACE.addScanlineTrace(58, 55);
+		HI40_TRACE.addScanlineTrace(3, 55);
+		HI40_TRACE.addScanlineTrace(11, 55);
+		HI40_TRACE.addScanlineTrace(19, 55);
+		HI40_TRACE.addScanlineTrace(27, 55);
+		HI40_TRACE.addScanlineTrace(35, 55);
+		HI40_TRACE.addScanlineTrace(43, 55);
+		HI40_TRACE.addScanlineTrace(51, 55);
+		HI40_TRACE.addScanlineTrace(59, 55);
+		HI40_TRACE.addScanlineTrace(4, 55);
+		HI40_TRACE.addScanlineTrace(12, 55);
+		HI40_TRACE.addScanlineTrace(20, 55);
+		HI40_TRACE.addScanlineTrace(28, 55);
+		HI40_TRACE.addScanlineTrace(36, 55);
+		HI40_TRACE.addScanlineTrace(44, 55);
+		HI40_TRACE.addScanlineTrace(52, 55);
+		HI40_TRACE.addScanlineTrace(60, 55);
+		HI40_TRACE.addScanlineTrace(5, 55);
+		HI40_TRACE.addScanlineTrace(13, 55);
+		HI40_TRACE.addScanlineTrace(21, 55);
+		HI40_TRACE.addScanlineTrace(29, 55);
+		HI40_TRACE.addScanlineTrace(37, 55);
+		HI40_TRACE.addScanlineTrace(45, 55);
+		HI40_TRACE.addScanlineTrace(53, 55);
+		HI40_TRACE.addScanlineTrace(61, 55);
+		HI40_TRACE.addScanlineTrace(6, 55);
+		HI40_TRACE.addScanlineTrace(14, 55);
+		HI40_TRACE.addScanlineTrace(22, 55);
+		HI40_TRACE.addScanlineTrace(30, 55);
+		HI40_TRACE.addScanlineTrace(38, 55);
+		HI40_TRACE.addScanlineTrace(46, 55);
+		HI40_TRACE.addScanlineTrace(54, 55);
+		HI40_TRACE.addScanlineTrace(62, 55);
+		HI40_TRACE.addScanlineTrace(7, 55);
+		HI40_TRACE.addScanlineTrace(15, 55);
+		HI40_TRACE.addScanlineTrace(23, 55);
+		HI40_TRACE.addScanlineTrace(31, 55);
+		HI40_TRACE.addScanlineTrace(39, 55);
+		HI40_TRACE.addScanlineTrace(47, 55);
+		HI40_TRACE.addScanlineTrace(55, 55);
+		HI40_TRACE.addScanlineTrace(63, 55);
+
+	}
 
 	private static final byte[] TEXT_DISPLAY = {
 
@@ -318,7 +625,7 @@ public class DisplayIIe extends DisplayWindow {
 		0x0e, 0x18, 0x18, 0x30, 0x18, 0x18, 0x0e, 0x00,
 		0x2c, 0x1a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x2a, 0x14, 0x2a, 0x14, 0x2a, 0x00, 0x00,
-		
+
 		// Flash text
 
 		0x63, 0x5d, 0x55, 0x45, 0x65, 0x7d, 0x43, 0x7f,
@@ -579,7 +886,7 @@ public class DisplayIIe extends DisplayWindow {
 		0x00, 0x2a, 0x14, 0x2a, 0x14, 0x2a, 0x00, 0x00,
 
 		// Mouse text
-		
+
 		0x63, 0x5d, 0x55, 0x45, 0x65, 0x7d, 0x43, 0x7f,
 		0x77, 0x6b, 0x5d, 0x5d, 0x41, 0x5d, 0x5d, 0x7f,
 		0x61, 0x5d, 0x5d, 0x61, 0x5d, 0x5d, 0x61, 0x7f,
@@ -857,7 +1164,7 @@ public class DisplayIIe extends DisplayWindow {
 		0x3f00,	0x3f03,	0x3f0c,	0x3f0f,	0x3f30,	0x3f33,	0x3f3c,	0x3f3f,
 		0x3fc0,	0x3fc3,	0x3fcc,	0x3fcf,	0x3ff0,	0x3ff3,	0x3ffc,	0x3fff
 	};
-	
+
 	private static final int GR_TO_DHGR[] = new int[] {
 		0x0000, 0x0000,
 		0x1111, 0x0444,
@@ -887,9 +1194,12 @@ public class DisplayIIe extends DisplayWindow {
 		HIRES40M,
 		HIRES80
 	}
-	
+
 	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
 		super(unitsPerCycle);
+		tracer = new ScanlineTracer8();
+		tracer.setScanStart(25, 70);
+		tracer.setScanSize(65, 262);
 		this.memoryBus = memoryBus;
 		this.memory = memoryBus.getMemory();
 		coldRestart();
@@ -910,9 +1220,9 @@ public class DisplayIIe extends DisplayWindow {
 	}
 
 	private class Canvas32x32 extends Canvas {
-		
+
 		private static final long serialVersionUID = 3277512952021171260L;
-		
+
 		public Canvas32x32() {
 			super();
 			setSize(XSIZE, YSIZE);
@@ -925,11 +1235,15 @@ public class DisplayIIe extends DisplayWindow {
 			yOff = (size.height-YSIZE)>>1;
 			g.drawImage(rawDisplay[paintPage], xOff, yOff, this);
 		}
-	
+
 	}
-	
+
 	private void evaluateSwitchChange() {
-		
+
+		// Visible page is set by PAGE2 flag if 80STORE is off - Sather 8-19
+		tracer.setPage(memoryBus.isPage2()&&!memoryBus.is80Store() ? 2:1);
+
+		// Character setting for text modes
 		if( memoryBus.isAltCharSet() )
 			textMod = 2;
 		else if( (flashToggle&0x10)!=0 )
@@ -937,34 +1251,43 @@ public class DisplayIIe extends DisplayWindow {
 		else
 			textMod = 0;
 
-		if( memoryBus.is80Col() )
-			displayTypeBottom = DisplayType.TEXT80;
-		else
-			displayTypeBottom = DisplayType.TEXT40;
-				 
-		if( !memoryBus.isText() && memoryBus.isHiRes() &&
-				memoryBus.is80Col() && !memoryBus.isAn3() )
-			displayTypeTop = DisplayType.HIRES80;
-		else if( !memoryBus.isText() && memoryBus.isHiRes() )
-			displayTypeTop = DisplayType.HIRES40;
-		else if( !memoryBus.isText() )
-			displayTypeTop = DisplayType.LORES40;
-		else
-			displayTypeTop = displayTypeBottom;
+		// HIRES40M / LORES40M - Sather 8-22
+		// Sather does not fully indicate whether TEXT40 bytes always ignore bit 8 despite the status of AN3
+		// This could only be tested by changing Apple IIe character firmware, but it is possible that alternate,
+		//   hi-bit-set character sets would be shifted (red-blue) if AN3 was reset
+		// If AN3 does effect text shifting, this feature would be disabled by modes such as double-hi-res,
+		//   which reset the AN3 switch
+		DisplayType displayTypeTop;
+		DisplayType displayTypeBottom;
 
-		mixedMode = memoryBus.isMixed();
-		if( !mixedMode )
-			displayType = displayTypeTop;
+		if( memoryBus.isText() )
+			displayTypeTop = memoryBus.is80Col() ? DisplayType.TEXT80:DisplayType.TEXT40;
+		else {
+			if( memoryBus.isHiRes() )
+				displayTypeTop = ( memoryBus.is80Col() && !memoryBus.isAn3() ) ?
+						DisplayType.HIRES80 : ( memoryBus.isAn3() ? DisplayType.HIRES40:DisplayType.HIRES40M );
+			else
+				displayTypeTop = ( memoryBus.is80Col() && !memoryBus.isAn3() ) ?
+						DisplayType.LORES80 : ( memoryBus.isAn3() ? DisplayType.LORES40:DisplayType.LORES40M );
+		}
+
+		// Set bottom panel display
+		if( memoryBus.isMixed() )
+			displayTypeBottom = memoryBus.is80Col() ? DisplayType.TEXT80:DisplayType.TEXT40;
 		else
-/*				if( scanLine==0x0140 ) 
-				displayType = displayTypeBottom;
-			else if( scanLine==0x0000 )
-				displayType = displayTypeTop;
-*/
-			displayType = displayTypeTop;
-		
-		if( displayType==DisplayType.HIRES80 ||
-				displayType==DisplayType.LORES80 ||
+			displayTypeBottom = displayTypeTop;
+
+		// Turn color burst cycle off if in text-only mode
+		if( displayTypeTop==DisplayType.TEXT40 || displayTypeTop==DisplayType.TEXT80 )
+			palIndex = PAL_INDEX_MONO;
+		else
+			palIndex = PAL_INDEX_COLOR;
+
+		// Set display mode for the given scanline
+		displayType = yPaint<SPLIT_DRAW ? displayTypeTop:displayTypeBottom;
+
+		// Adjust the 40/80 7-bit offset
+		if( displayType==DisplayType.HIRES80 || displayType==DisplayType.LORES80 ||
 				displayType==DisplayType.TEXT80 ) {
 			colorWordSize -= offset40;
 			offset40 = 0;
@@ -973,186 +1296,160 @@ public class DisplayIIe extends DisplayWindow {
 			colorWordSize += OFFSET40 - offset40;
 			offset40 = OFFSET40;
 		}
-		if( displayType==DisplayType.TEXT40 || displayType==DisplayType.TEXT80 )
-			palIndex = PAL_INDEX_MONO;
-		else
-			palIndex = PAL_INDEX_COLOR;
 
-		page = memoryBus.isPage2()&&!memoryBus.is80Store() ? 2:1;
+		// Set the addressing mode
+		if( displayType==DisplayType.HIRES40 || displayType==DisplayType.HIRES40M ||
+				displayType==DisplayType.HIRES80 )
+			tracer.setTraceMap(DisplayIIe.HI40_TRACE);
+		else
+			tracer.setTraceMap(DisplayIIe.LO40_TRACE);
 
 	}
-	
+
 	@Override
 	public void cycle() throws HardwareException {
-		
+
 		incSleepCycles(1);
+
+		if( !tracer.isBlank() ) {
+			tracer.cycle();
+			if( tracer.isHbl() ) {
+				xPaint = 0;
+				colorWord = 0;
+				colorWordSize = offset40;
+				shiftBit = 0;
+				yPaint += 2;
+				if( yPaint==SPLIT_DRAW )
+					lastSwitchIteration--;
+				else if( yPaint==YSIZE ) {
+					yPaint = 0;
+					lastSwitchIteration--;
+					flipPage();
+					cleanEdges();
+				}
+				return;
+			}
+		} else {
+			tracer.cycle();
+			if( tracer.isBlank() )
+				return;
+		}
 
 		if( textMod<2 && (flashToggle^(++flashToggle)&0x10)!=0 )
 			textMod |= (flashToggle&0x10)!=0 ? 1:0;
 
-		int readRandX = Math.abs(rand.nextInt())%40;
-		int readRandY = (Math.abs(rand.nextInt()%192))<<1;
-		// TODO - cycles should be altered to sync with cpu
-		for( int scanLine = 0; scanLine < 384; scanLine+=2 ) {
+		int switchIteration = memoryBus.getSwitchIteration();
+		if( lastSwitchIteration!=switchIteration ) {
+			lastSwitchIteration = switchIteration;
+			evaluateSwitchChange();
+		}
 
-			int y = scanLine>>4;
-			int yc = scanLine&0x0f;
-			int gfxWord = 0;
-			
-			for( int x = 0; x < 40; x++ ) {
-				
-				int switchIteration = memoryBus.getSwitchIteration();
-				if( lastSwitchIteration!=switchIteration ) {
-					lastSwitchIteration = switchIteration;
-					evaluateSwitchChange();
-				}
+		int gfxWord = 0;
+		int readValue = 0;
+		int readValueExt = 0;
+		int readAddress = tracer.getAddress();
 
-				if( x==0 ) {
-					
-					xPos = 0;
-					colorWord = 0;
-					colorWordSize = offset40;
-					shiftBit = 0;
-					if( mixedMode ) {
-						if( scanLine==0x0140 ) 
-							displayType = displayTypeBottom;
-						else if( scanLine==0x0000 ) {
-							flipPage();
-							cleanEdges();
-							displayType = displayTypeTop;
-						}
-						if( displayType==DisplayType.HIRES80 ||
-								displayType==DisplayType.LORES80 ||
-								displayType==DisplayType.TEXT80 ) {
-							colorWordSize -= offset40;
-							offset40 = 0;
-						}
-						else {
-							colorWordSize += OFFSET40 - offset40;
-							offset40 = OFFSET40;
-						}
-					} else if( scanLine==0x0000 ) {
-						flipPage();
-						cleanEdges();
-					}
+		switch( displayType ) {
 
-				}
-					
-				int readValue = 0;
-				switch( displayType ) {
-				
-				case HIRES40:
-					readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
-					gfxWord = HGR_TO_DHGR[readValue&0x7f];
-					if( (readValue&0x80)!=0 ) {
-						gfxWord <<= 1;
-						gfxWord |= shiftBit;
-					}
-					if( (gfxWord&0x2000)!=0 )
-						shiftBit = 1;
-					else
-						shiftBit = 0;
-					break;
-					
-				case HIRES40M:
-					readValue = memory.getByte(getAddressHi40(page, (y<<3)+(yc>>1), x));
-					gfxWord = HGR_TO_DHGR[readValue&0x7f];
-					break;
-					
-				case HIRES80:
-					int address = getAddressHi40(page, (y<<3)+(yc>>1), x);
-					readValue = memory.getByte(0x10000|address);
-					gfxWord = readValue;
-					readValue = memory.getByte(address);
-					gfxWord |= readValue<<7;
-					break;
-					
-				case LORES40:
-					readValue = memory.getByte(getAddressLo40(page, y, x));
-					int plotValue;
-					if( yc>=8 )
-						plotValue = readValue>>4;
-					else
-						plotValue = readValue&0x0f;
-					gfxWord = GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)];
-					break;
-					
-				case LORES40M:
-					readValue = memory.getByte(getAddressLo40(page, y, x));
-					if( yc>=8 )
-						plotValue = readValue>>4;
-					else
-						plotValue = readValue&0x0f;
-					gfxWord = HGR_TO_DHGR[0x7f&GR_TO_DHGR[(plotValue<<1)+((x&0x01)!=0?1:0)]];
-					break;
-					
-				case LORES80:
-					// TODO
-					gfxWord = 0xaaaa;
-					break;
-					
-				case TEXT40:
-					readValue = memory.getByte(getAddressLo40(page, y, x));
-					gfxWord = HGR_TO_DHGR[TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]];
-					break;
-					
-				case TEXT80:
-					address = getAddressLo40(page, y, x);
-					readValue = memory.getByte(0x10000|address);
-					gfxWord = TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))];
-					readValue = memory.getByte(address);
-					gfxWord |= TEXT_DISPLAY[textMod*2048+(readValue*8+(yc>>1))]<<7;
-					break;
-					
-				}
-				if( scanLine==readRandY && x==readRandX )
-					this.lastReadValue = readValue;
-				
-				int yPos = (y<<4)+yc;
-					
-				colorWord |= gfxWord<<colorWordSize;
-				colorWordSize += 14;
-
-				BufferedImage display = rawDisplay[bufferPage];
-				while( colorWordSize>=4 ) {
-					int colorCode = palIndex+(colorWord&0x0f);
-					int outColor = pal[colorCode];
-					int bleedColor = pal[colorCode+16];
-					int scanColor = pal[colorCode+32];
-					if( (colorCode&1)!=0 ) {
-						display.setRGB(xPos, yPos, outColor);
-						display.setRGB(xPos++, yPos+1, scanColor);
-					} else {
-						display.setRGB(xPos, yPos, bleedColor);
-						display.setRGB(xPos++, yPos+1, bleedColor);
-					}
-					if( (colorCode&2)!=0 ) {
-						display.setRGB(xPos, yPos, outColor);
-						display.setRGB(xPos++, yPos+1, scanColor);
-					} else {
-						display.setRGB(xPos, yPos, bleedColor);
-						display.setRGB(xPos++, yPos+1, bleedColor);
-					}
-					if( (colorCode&4)!=0 ) {
-						display.setRGB(xPos, yPos, outColor);
-						display.setRGB(xPos++, yPos+1, scanColor);
-					} else {
-						display.setRGB(xPos, yPos, bleedColor);
-						display.setRGB(xPos++, yPos+1, bleedColor);
-					}
-					if( (colorCode&8)!=0 ) {
-						display.setRGB(xPos, yPos, outColor);
-						display.setRGB(xPos++, yPos+1, scanColor);
-					} else {
-						display.setRGB(xPos, yPos, bleedColor);
-						display.setRGB(xPos++, yPos+1, bleedColor);
-					}
-					colorWord >>= 4;
-					colorWordSize -= 4;
-				}
-
+		case HIRES40:
+			readValue = memory.getByte(readAddress);
+			gfxWord = HGR_TO_DHGR[readValue&0x7f];
+			if( (readValue&0x80)!=0 ) {
+				gfxWord <<= 1;
+				gfxWord |= shiftBit;
 			}
-		
+			shiftBit = (gfxWord&0x2000)!=0 ? 1:0;
+			break;
+
+		case HIRES40M:
+			readValue = memory.getByte(readAddress);
+			gfxWord = HGR_TO_DHGR[readValue&0x7f];
+			break;
+
+		case HIRES80:
+			readValue = memory.getByte(0x10000|readAddress);
+			gfxWord = readValue;
+			readValue = memory.getByte(readAddress);
+			gfxWord |= readValue<<7;
+			break;
+
+		case LORES40:
+			readValue = memory.getByte(readAddress);
+			readValue =  (yPaint&0x08)!=0 ? readValue>>4 : readValue&0x0f;
+			gfxWord = GR_TO_DHGR[(readValue<<1)+((tracer.getHScan()&0x01)!=0?0:1)];
+			break;
+
+		case LORES40M:
+			readValue = memory.getByte(readAddress);
+			readValue = (yPaint&0x08)!=0 ? readValue>>4 : readValue&0x0f;
+			gfxWord = HGR_TO_DHGR[0x7f&GR_TO_DHGR[(readValue<<1)+((tracer.getHScan()&0x01)!=0?0:1)]];
+			break;
+
+		case LORES80:
+			if( (yPaint&0x08)!=0 ) {
+				readValue = memory.getByte(0x10000|readAddress)>>4;
+				readValueExt = memory.getByte(readAddress)>>4;
+			} else {
+				readValue = memory.getByte(0x10000|readAddress)&0x0f;
+				readValueExt = memory.getByte(readAddress)&0x0f;
+			}
+			gfxWord = 0x7f & GR_TO_DHGR[((tracer.getHScan()&0x01)!=0?0:1)+(readValue<<1)];
+			gfxWord |= ( 0x7f & GR_TO_DHGR[((tracer.getHScan()&0x01)!=0?0:1)+(readValueExt<<1)] ) << 7;
+			break;
+
+		case TEXT40:
+			readValue = memory.getByte(readAddress);
+			gfxWord = HGR_TO_DHGR[TEXT_DISPLAY[(textMod<<11)+(readValue*8+((yPaint&0x0e)>>1))]];
+			break;
+
+		case TEXT80:
+			readValue = memory.getByte(0x10000|readAddress);
+			gfxWord = TEXT_DISPLAY[(textMod<<11)+(readValue*8+((yPaint&0x0e)>>1))];
+			readValue = memory.getByte(readAddress);
+			gfxWord |= TEXT_DISPLAY[(textMod<<11)+(readValue*8+((yPaint&0x0e)>>1))]<<7;
+			break;
+
+		}
+
+		colorWord |= gfxWord<<colorWordSize;
+		colorWordSize += 14;
+
+		BufferedImage display = rawDisplay[bufferPage];
+		while( colorWordSize>=4 ) {
+			int colorCode = palIndex+(colorWord&0x0f);
+			int outColor = pal[colorCode];
+			int bleedColor = pal[colorCode+16];
+			int scanColor = pal[colorCode+32];
+			if( (colorCode&1)!=0 ) {
+				display.setRGB(xPaint, yPaint, outColor);
+				display.setRGB(xPaint++, yPaint+1, scanColor);
+			} else {
+				display.setRGB(xPaint, yPaint, bleedColor);
+				display.setRGB(xPaint++, yPaint+1, bleedColor);
+			}
+			if( (colorCode&2)!=0 ) {
+				display.setRGB(xPaint, yPaint, outColor);
+				display.setRGB(xPaint++, yPaint+1, scanColor);
+			} else {
+				display.setRGB(xPaint, yPaint, bleedColor);
+				display.setRGB(xPaint++, yPaint+1, bleedColor);
+			}
+			if( (colorCode&4)!=0 ) {
+				display.setRGB(xPaint, yPaint, outColor);
+				display.setRGB(xPaint++, yPaint+1, scanColor);
+			} else {
+				display.setRGB(xPaint, yPaint, bleedColor);
+				display.setRGB(xPaint++, yPaint+1, bleedColor);
+			}
+			if( (colorCode&8)!=0 ) {
+				display.setRGB(xPaint, yPaint, outColor);
+				display.setRGB(xPaint++, yPaint+1, scanColor);
+			} else {
+				display.setRGB(xPaint, yPaint, bleedColor);
+				display.setRGB(xPaint++, yPaint+1, bleedColor);
+			}
+			colorWord >>= 4;
+			colorWordSize -= 4;
 		}
 
 	}
@@ -1198,19 +1495,20 @@ public class DisplayIIe extends DisplayWindow {
 
 	@Override
 	public void coldRestart() throws HardwareException {
+		tracer.coldRestart();
 		lastSwitchIteration = -1;
 		rawDisplay = new BufferedImage[2];
 		bufferPage = 0;
 		paintPage = 1;
+		yPaint = YSIZE-2;
 		rawDisplay[0] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
 		rawDisplay[1] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
 		generatePalette();
 	}
 
 	private void generatePalette() {
-		
-		// Color palette
 
+		// Add main color palette
 		pal = new int[48*3];
 		Color [] basePal = new Color[4];
 
@@ -1242,7 +1540,7 @@ public class DisplayIIe extends DisplayWindow {
 			pal[palIndex] = mix.getRGB();
 
 		}
-		
+
 		// Add monochrome
 		pal[PAL_INDEX_MONO] = Color.BLACK.getRGB();
 		pal[PAL_INDEX_MONO_GREEN] = Color.BLACK.getRGB();
@@ -1250,7 +1548,7 @@ public class DisplayIIe extends DisplayWindow {
 			pal[PAL_INDEX_MONO+index] = Color.WHITE.getRGB();
 			pal[PAL_INDEX_MONO_GREEN+index] = Color.GREEN.getRGB();
 		}
-		
+
 		// Add color bleed palettes
 		for( int palSet = 0; palSet<3; palSet++ ) {
 			for( int index = 0; index<16; index++ ) {
@@ -1267,8 +1565,11 @@ public class DisplayIIe extends DisplayWindow {
 	}
 
 	public int getLastRead() {
-		// TODO: sync this when cycle timing implementation is complete
-		return lastReadValue;
+		return memory.getByte(tracer.getAddress());
 	}
-	
+
+	public boolean isVbl() {
+		return tracer.isVbl();
+	}
+
 }

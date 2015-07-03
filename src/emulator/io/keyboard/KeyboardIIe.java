@@ -368,9 +368,9 @@ public class KeyboardIIe extends Keyboard {
 		if( keyEvent==null )
 			return;
 		
-System.out.println(keyEvent);
+		//System.out.println(keyEvent);
 
-	switch( keyEvent ) {
+		switch( keyEvent ) {
 
 		case KEY_EVENT_RESET_PRESS:
 			cpu.setInterruptPending(Cpu65c02.INTERRUPT_HLT);

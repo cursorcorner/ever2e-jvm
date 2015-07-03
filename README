@@ -24,20 +24,24 @@ HGR artifacts not completely accurate
 GR artifacts not completely accurate
 	seems to be immune to offset fragmentation in hardware tests
 Speaker static at startup
-Does not successfully run IIe memory test
+Does not successfully pass IIe memory test
 Right horizontal scan line not matching up in 40-col modes
-HGR not kicking in until a second mode change occurs
+Needs to reset keyboard when focus is regained to avoid stuck-keys
+
 
 -------------------------------------------------------------------------------
                                  VERSION INFO                                   
 -------------------------------------------------------------------------------
 
-Sound now fully implemented
-CPU with accurate cycle timing (decimal mode incomplete)
-Text / graphics modes supported with accurate color and pixel offset
-	other than GR40M, and GR80
-Key input matches IIe behavior
-	key repeat not yet complete
-	reset key hold-and-halt effect not yet implemented
-Memory bus complete
-Shift-insert or shift-F2 pastes contents of clipboard
+CPU with accurate cycle timing, synced with emulated monitor refresh rate
+	decimal mode incomplete
+Memory bus
+	missing paddle
+	missing cassette switches or stand-ins
+	missing vbl
+	need to swap outputs from video to keyboard out for 16 read types
+Text / graphics modes with accurate color and pixel offset
+Key input matching IIe behavior
+	key repeat not implemented
+Shift-insert or shift-F2 pastes contents of clipboard (can be cancelled with ctrl-reset or F12)
+Sound physics implemented

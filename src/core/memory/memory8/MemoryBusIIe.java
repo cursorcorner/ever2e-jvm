@@ -14,7 +14,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 	private KeyboardIIe keyboard;
 	private DisplayIIe monitor;
-	
+
 	private SwitchState switch80Store = new SwitchState();
 	private SwitchState switchHiRes = new SwitchState();
 	private SwitchState switchRamRead = new SwitchState();
@@ -41,31 +41,31 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private int switchIteration;
 
 	public class SwitchState {
-		
+
 		private boolean state = false;
 
 		public boolean getState() {
 			return state;
 		}
-		
+
 		public void setState() {
 			state = true;
 		}
-		
+
 		public void resetState() {
 			state = false;
 		}
-		
+
 		public String toString() {
 			return new Boolean(state).toString();
 		}
-		
+
 	}
-	
+
 	public interface MemoryAction8 {
 
 		public int readMem( int address );
-		
+
 		public void writeMem( int address, int value );
 
 	}
@@ -79,24 +79,24 @@ public class MemoryBusIIe extends MemoryBus8 {
 			this.readSwitchStatus = switchStatus;
 			this.writeSwitchStatus = switchStatus;
 		}
-		
+
 		public SwitchIIe( SwitchState readSwitchStatus, SwitchState writeSwitchStatus ) {
 			this.readSwitchStatus = readSwitchStatus;
 			this.writeSwitchStatus = writeSwitchStatus;
 		}
-		
+
 		@Override
 		public int readMem( int address ) {
 			/// TODO: add monitor read-byte here instead of 0x00
 			if( readSwitchStatus==null )
 				return monitor==null ? 0:monitor.getLastRead();
 			else
-				return (monitor==null ? 0:monitor.getLastRead()) | 
+				return (monitor==null ? 0:monitor.getLastRead()) |
 						(readSwitchStatus.getState() ? 0x80:0x00);
 		}
 
 	}
-	
+
 	public class SwitchSetStatusIIe extends SwitchIIe {
 
 		public SwitchSetStatusIIe( SwitchState switchStatus ) {
@@ -106,14 +106,14 @@ public class MemoryBusIIe extends MemoryBus8 {
 		public SwitchSetStatusIIe( SwitchState readSwitchStatus, SwitchState writeSwithStatus ) {
 			super(readSwitchStatus, writeSwithStatus);
 		}
-		
+
 		@Override
 		public void writeMem(int address, int value) {
 			writeSwitchStatus.setState();
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchClearStatusIIe extends SwitchIIe {
 
 		public SwitchClearStatusIIe( SwitchState switch80Store ) {
@@ -123,80 +123,80 @@ public class MemoryBusIIe extends MemoryBus8 {
 		public SwitchClearStatusIIe( SwitchState readSwitchStatus, SwitchState writeSwithStatus ) {
 			super(readSwitchStatus, writeSwithStatus);
 		}
-		
+
 		@Override
 		public void writeMem(int address, int value) {
 			writeSwitchStatus.resetState();
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchClearRWIIe extends SwitchClearOnlyIIe {
 
 		public SwitchClearRWIIe( SwitchState switchStatus ) {
 			super(switchStatus);
 		}
-		
+
 		@Override
 		public int readMem( int address ) {
 			writeMem(address, 0x00);
 			return super.readMem(address);
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchSetRWIIe extends SwitchSetOnlyIIe {
 
 		public SwitchSetRWIIe( SwitchState switchStatus ) {
 			super(switchStatus);
 		}
-		
+
 		@Override
 		public int readMem( int address ) {
 			writeMem(address, 0x00);
 			return super.readMem(address);
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchClearOnlyIIe extends SwitchIIe {
 
 		public SwitchClearOnlyIIe( SwitchState switchStatus ) {
 			super(null, switchStatus);
 		}
-		
+
 		@Override
 		public void writeMem(int address, int value) {
 			writeSwitchStatus.resetState();
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchSetOnlyIIe extends SwitchIIe {
 
 		public SwitchSetOnlyIIe( SwitchState switchStatus ) {
 			super(null, switchStatus);
 		}
-		
+
 		@Override
 		public void writeMem(int address, int value) {
 			writeSwitchStatus.setState();
 		}
-		
-	}	
-	
+
+	}
+
 	public class SwitchReadOnlyIIe extends SwitchIIe {
 
 		public SwitchReadOnlyIIe( SwitchState switchStatus ) {
 			super(switchStatus, null);
 		}
-		
+
 		@Override
 		public void writeMem(int address, int value) {
 		}
-		
-	}	
-	
+
+	}
+
 	private SwitchIIe switchIo_c080_c084 = new SwitchClearStatusIIe(null, switchPreWrite) {
 
 		@Override
@@ -344,7 +344,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		public void writeMem( int address, int value ) {
 			switch80Store.resetState();
 		}
-	
+
 	}
 
 	// C010h - KEYBOARD STROBE
@@ -380,7 +380,34 @@ public class MemoryBusIIe extends MemoryBus8 {
 				keyboard.toggleKeyQueue(false);
 			keyboard.getHeldKeyCode();
 		}
+
+	}
 	
+	// C019h - VBL
+	// Bit 7 indicates whether vertical blanking is active
+	// Bit 0-6 indicate ASCII code
+	private class SwitchVblState extends SwitchIIe {
+
+		public SwitchVblState() {
+			super(null);
+		}
+
+		@Override
+		public int readMem( int address ) {
+			if( keyboard==null )
+				return monitor.isVbl() ? 0x80:0x00;
+			return monitor.isVbl() ?
+					0x80|keyboard.getTypedKeyCode():
+						0x7f&keyboard.getTypedKeyCode();
+		}
+
+		@Override
+		public void writeMem( int address, int value ) {
+			if( keyboard==null )
+				return;
+			keyboard.getHeldKeyCode();
+		}
+
 	}
 
 	// C061h / C069h - OPNAPPLE / PB0
@@ -415,7 +442,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		private int blockBitLen;
 		private int memoryAddrStart;
 		private int maxMemoryAddr;
-		
+
 		public MemoryBlock8( int memoryAddrStart, int memoryAddrEnd, int blockBitLen ) {
 			this.maxMemoryAddr = memoryAddrEnd+1;
 			actionArray = new MemoryAction8[(maxMemoryAddr-memoryAddrStart)>>blockBitLen];
@@ -423,12 +450,12 @@ public class MemoryBusIIe extends MemoryBus8 {
 			this.memoryAddrStart = memoryAddrStart;
 			this.lastBlockStart = memoryAddrStart;
 		}
-		
+
 		@Override
 		public int readMem( int address ) {
 			return actionArray[(address-memoryAddrStart)>>blockBitLen].readMem(address);
 		}
-		
+
 		@Override
 		public void writeMem( int address, int value ) {
 			actionArray[(address-memoryAddrStart)>>blockBitLen].writeMem(address, value);
@@ -442,20 +469,20 @@ public class MemoryBusIIe extends MemoryBus8 {
 			lastBlockAction = blockAction;
 			lastBlockStart = blockStart;
 		}
-		
+
 		void completeBlock() {
 			assignNextBlock(maxMemoryAddr, null);
 			lastBlockStart = memoryAddrStart;
 		}
-		
+
 		void assignBlock( int blockStart, MemoryAction8 blockAction ) {
 			actionArray[(blockStart-memoryAddrStart)>>blockBitLen] = blockAction;
 		}
-		
+
 	}
 
 	private class ZeroPageStackAccess implements MemoryAction8 {
-		
+
 		@Override
 		public int readMem( int address )
 		{
@@ -464,7 +491,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 			else
 				return memory.getByte(address);
 		}
-	
+
 		@Override
 		public void writeMem( int address, int value )
 		{
@@ -473,14 +500,14 @@ public class MemoryBusIIe extends MemoryBus8 {
 			else
 				memory.setByte(address, value);
 		}
-	
+
 	}
-	
+
 	private class BankedRamAccess implements MemoryAction8 {
 
 		@Override
 		public int readMem( int address ) {
-			
+
 			// Address RAM 0x200-0xbfff
 
 			// Sather 5-25:
@@ -512,9 +539,9 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 			// Sather 5-25:
 			//   If 80STORE is set, RAMRD and RAMWRT do not affect $400-$7FF
-			//   If 80STORE and HIRES are both set, RAMRD and RAMWRT do not affect $400-$7FF or $2000-$3FFF	
+			//   If 80STORE and HIRES are both set, RAMRD and RAMWRT do not affect $400-$7FF or $2000-$3FFF
 			// Otherwise the PAGE2 flag is used to indicate auxiliary memory should be used (Sather 5-7, 5-22)
-			
+
 			boolean auxWrite;
 			if( switch80Store.getState() ) {
 				if( ( address>=0x400 && address<0x800 ) || ( switchHiRes.getState() && address>=0x2000 && address<0x4000 ) )
@@ -533,16 +560,16 @@ public class MemoryBusIIe extends MemoryBus8 {
 		}
 
 	}
-	
+
 	// C100h-C2FFh & C400h-C7FFh System ROM / Peripheral ROM
 	private MemoryAction8 slotIoAccess = new MemoryAction8() {
 
 		@Override
 		public int readMem( int address )
 		{
-	
+
 			int slot = (address-0xc000)>>8;
-			
+
 			if( switchIntCxRom.getState() )
 				// Internal ROM at $CNXX
 				return rom16k.getByte(address-0xc000);
@@ -553,24 +580,24 @@ public class MemoryBusIIe extends MemoryBus8 {
 				else
 					return monitor==null ? 0:monitor.getLastRead();
 			}
-			
+
 		}
-	
+
 		@Override
 		public void writeMem(int address, int value) {
 			// NOP
 			readMem(address);	/// TODO: Verify on hardware
 		}
-		
+
 	};
-			
+
 	// C300h-C3FFh System ROM / Peripheral ROM
 	private MemoryAction8 slot3IoAccess = new MemoryAction8() {
 
 		@Override
 		public int readMem( int address )
 		{
-	
+
 			// $C3XX
 
 			// Sather 5-28
@@ -578,7 +605,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 			//            Reset by access to $CFFF or 'RESET
 			if( !switchSlotC3Rom.getState() )
 				switchIntC8Rom.setState();
-			
+
 			if( switchIntCxRom.getState() || !switchSlotC3Rom.getState() ) {
 				// Internal ROM at $C3XX
 				return rom16k.getByte(address-0xc000);
@@ -592,47 +619,47 @@ public class MemoryBusIIe extends MemoryBus8 {
 			}
 
 		}
-	
+
 		@Override
 		public void writeMem(int address, int value) {
 			// NOP
 			readMem(address);	/// TODO: Verify on hardware
 		}
-		
+
 	};
-			
+
 	// C800h-CFFFh System ROM / Peripheral expansion ROM
 	private class ExpansionRomAccess implements MemoryAction8 {
-		
+
 		@Override
 		public int readMem( int address )
-		{ 
-	
+		{
+
 			// Read from expansion memory 0xc800-0xcffe / soft-switch 0xcfff
 			// Sather 5-28
 			// INTC8ROM - Set by access to $C3XX with SLOTC3ROM reset
-			//            Reset by access to $CFFF or 'RESET	
+			//            Reset by access to $CFFF or 'RESET
 			//            Grants access to internal ROM at $C800-$CFFF
-	
+
 			if( address==0xcfff ) {
 				switchIntC8Rom.resetState();
 				return 0;  /// TODO
 			}
-				
+
 			if( switchIntC8Rom.getState() || switchIntCxRom.getState() )
 				return rom16k.getByte(address-0xc000);
-	
+
 			/// STUB ///
-			
+
 			System.err.println("Warning: unsupported read from expansion memory at 0x" +
 					Integer.toHexString(address));
 			return 0;
-			
+
 		/*
-				
+
 			/// Reading locations 0xcN00-0xcNff will enable the block designated to slot N for reading
 			/// Reading 0xcfff disables reading 0xc800-0xcfff for all cards and instead directs reads to the system ROM
-	
+
 			else {
 				if( false )//// STUB - LC ROM switch on
 					return rom16k.getByte(address-0xc000);
@@ -646,28 +673,28 @@ public class MemoryBusIIe extends MemoryBus8 {
 			}
 		*/
 		}
-	
+
 		@Override
 		public void writeMem(int address, int value) {
 			// NOP
 			readMem(address);	/// Verify on hardware
 		}
-		
+
 	}
-		
-	
+
+
 	/**
 	 * $D000-$FFFF - Upper Memory
 	 * See Sather 5-12
 	 */
 	private class UpperMemoryAccess implements MemoryAction8 {
-	
+
 		@Override
 		public int readMem( int address )
 		{
-	
+
 			if( switchHRamRd.getState() ) {
-	
+
 				if( switchAltZp.getState() ) {
 					if( address<0xe000 && switchBank1.getState() )
 						return memory.getByte(BANKED_RAM|(address-0x1000));
@@ -680,24 +707,24 @@ public class MemoryBusIIe extends MemoryBus8 {
 					else
 						return memory.getByte(address);
 				}
-					
+
 			}
 			else
 				return rom16k.getByte(address-ROM_START);
-	
+
 		}
-	
+
 		@Override
 		public void writeMem( int address, int value )
 		{
-	
+
 			// $D000-$DFFF
 			// Sather 5-12
-			
+
 			// Write banked RAM or ignore write to system ROM
-	
+
 			if( switchHRamWrt.getState() ) {
-	
+
 				if( switchAltZp.getState() ) {
 					if( address<0xe000 && switchBank1.getState() )
 						memory.setByte(BANKED_RAM|(address-0x1000), value);
@@ -710,15 +737,15 @@ public class MemoryBusIIe extends MemoryBus8 {
 					else
 						memory.setByte(address, value);
 				}
-	
+
 			}
-	
+
 		}
-		
+
 	}
-	
+
 	private MemoryBlock8 ioSwitches;
-	
+
 	private MemoryBlock8 memoryLayout;
 
 	public MemoryBusIIe( Memory8 memory, Memory8 rom16k ) {
@@ -760,10 +787,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 		switchAn3.resetState();
 		switchIteration++;
 	}
-	
+
 	@Override
 	public void coldRestart() throws HardwareException {
-		
+
 		super.coldRestart();
 		for( int i = Math.min(0x10000, getMaxAddress())/4-1; i>=0; i-- ) {
 			memory.setByte(i*4+0, 0xff);
@@ -775,13 +802,13 @@ public class MemoryBusIIe extends MemoryBus8 {
 		switchText.resetState();
 		switchMixed.resetState();
 		warmRestart();
-		
+
 		memoryLayout = new MemoryBlock8(0x0000, 0xffff, 8);
-	
+
 		// 0000h Zero-page
 		// 0100h Stack
 		memoryLayout.assignNextBlock(0x0000, new ZeroPageStackAccess());
-		
+
 		// 0200h RAM
 		// 0400h Text and low-resolution graphics RAM page 1
 		// 0800h Text and low-resolution graphics RAM page 2
@@ -790,7 +817,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		// 4000h High-resolution graphics RAM page 2
 		// 6000h RAM
 		memoryLayout.assignNextBlock(0x0200, new BankedRamAccess());
-		
+
 		// C000h I/O switches
 		// See Sather 2-13
 		//SwitchIIe nullSwitch = new SwitchReadOnlyIIe(new SwitchState());
@@ -822,7 +849,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 			return super.readMem(address); }  };
 		ioSwitches.assignNextBlock(0xc000, warnSwitchLow);
 		ioSwitches.completeBlock();
-// TODO: c000 - c000F actually reads keyboard not monitor
+		// TODO: c000 - c000F actually reads keyboard not monitor
 		ioSwitches.assignBlock(0xc000, new SwitchKeyboardStrobe(null));
 		ioSwitches.assignBlock(0xc001, new SwitchSetOnlyIIe(switch80Store));
 		ioSwitches.assignBlock(0xc002, new SwitchClearOnlyIIe(switchRamRead));
@@ -841,7 +868,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc00f, new SwitchSetOnlyIIe(switchAltCharSet));
 		ioSwitches.assignBlock(0xc010, new SwitchKeyboardState(null));
 		ioSwitches.assignBlock(0xc011, new SwitchKeyboardState(switchBank1) {
-			public int readMem(int address) { return 0x80^super.readMem(address); /* Read inverted BANK1 */ } 
+			public int readMem(int address) { return 0x80^super.readMem(address); /* Read inverted BANK1 */ }
 		});
 		ioSwitches.assignBlock(0xc012, new SwitchKeyboardState(switchHRamRd));
 		ioSwitches.assignBlock(0xc013, new SwitchKeyboardState(switchRamRead));
@@ -850,12 +877,14 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc016, new SwitchKeyboardState(switchAltZp));
 		ioSwitches.assignBlock(0xc017, new SwitchKeyboardState(switchSlotC3Rom));
 		ioSwitches.assignBlock(0xc018, new SwitchKeyboardState(switch80Store));
+		ioSwitches.assignBlock(0xc019, new SwitchVblState());
 		ioSwitches.assignBlock(0xc01a, new SwitchKeyboardState(switchText));
 		ioSwitches.assignBlock(0xc01b, new SwitchKeyboardState(switchMixed));
 		ioSwitches.assignBlock(0xc01c, new SwitchKeyboardState(switchPage2));
 		ioSwitches.assignBlock(0xc01d, new SwitchKeyboardState(switchHiRes));
 		ioSwitches.assignBlock(0xc01e, new SwitchKeyboardState(switchAltCharSet));
 		ioSwitches.assignBlock(0xc01f, new SwitchKeyboardState(switch80Col));
+		// c020-c02f - most likely cassette toggle
 		ioSwitches.assignBlock(0xc030, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc031, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc032, new SwitchSetRWIIe(switchSpeakerToggle));
@@ -872,6 +901,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc03d, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc03e, new SwitchSetRWIIe(switchSpeakerToggle));
 		ioSwitches.assignBlock(0xc03f, new SwitchSetRWIIe(switchSpeakerToggle));
+		// c040-c04f - most likely game strobe
 		ioSwitches.assignBlock(0xc050, new SwitchClearRWIIe(switchText));
 		ioSwitches.assignBlock(0xc051, new SwitchSetRWIIe(switchText));
 		ioSwitches.assignBlock(0xc052, new SwitchClearRWIIe(switchMixed));
@@ -888,12 +918,23 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc05d, new SwitchSetRWIIe(switchAn2));
 		ioSwitches.assignBlock(0xc05e, new SwitchClearRWIIe(switchAn3));
 		ioSwitches.assignBlock(0xc05f, new SwitchSetRWIIe(switchAn3));
+		// c060 - cassette in
 		ioSwitches.assignBlock(0xc061, stateOpenApple);
 		ioSwitches.assignBlock(0xc062, stateOptionKey);
 		ioSwitches.assignBlock(0xc063, stateShiftKey);
+		// c064 PADDL0 Analog Input 0
+		// c065 PADDL1 Analog Input 1
+		// c066 PADDL2 Analog Input 2
+		// c067 PADDL3 Analog Input 3
+		// c068 - cassette in
 		ioSwitches.assignBlock(0xc069, stateOpenApple);
 		ioSwitches.assignBlock(0xc06a, stateOptionKey);
 		ioSwitches.assignBlock(0xc06b, stateShiftKey);
+		// c06c PADDL0 Analog Input 0
+		// c06d PADDL1 Analog Input 1
+		// c06e PADDL2 Analog Input 2
+		// c06f PADDL3 Analog Input 3
+		// c070 - Paddle strobe, likely - c07f as well
 		ioSwitches.assignBlock(0xc080, switchIo_c080_c084);
 		ioSwitches.assignBlock(0xc081, switchIo_c081_c085);
 		ioSwitches.assignBlock(0xc082, switchIo_c082_c086);
@@ -910,7 +951,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc08d, switchIo_c089_c08d);
 		ioSwitches.assignBlock(0xc08e, switchIo_c08a_c08e);
 		ioSwitches.assignBlock(0xc08f, switchIo_c08b_c08f);
-		
+
 		/// TODO implement peripheral I/O here instead of displaying warning
 		SwitchReadOnlyIIe warnSwitch = new SwitchReadOnlyIIe(null) {
 			public void writeMem(int address, int value) { System.err.println("Warning: peripheral writes not implemented in range 0xc090-0xc0ff"); }
@@ -918,10 +959,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 			return super.readMem(address); }  };
 		for( int i = 0xc090; i<0xc100; i++ )
 			ioSwitches.assignBlock(i, warnSwitch);
-		
+
 		memoryLayout.assignNextBlock(0xc000, ioSwitches);
 		//memoryLayout.assignNextBlock(0xc000, ioSwitchesOuter);
-		
+
 		// C100h System ROM / Peripheral ROM
 		memoryLayout.assignNextBlock(0xc100, slotIoAccess);
 		memoryLayout.assignNextBlock(0xc200, slotIoAccess);
@@ -930,13 +971,13 @@ public class MemoryBusIIe extends MemoryBus8 {
 		memoryLayout.assignNextBlock(0xc500, slotIoAccess);
 		memoryLayout.assignNextBlock(0xc600, slotIoAccess);
 		memoryLayout.assignNextBlock(0xc700, slotIoAccess);
-		
+
 		// C800h System ROM / Peripheral expansion ROM
 		memoryLayout.assignNextBlock(0xc800, new ExpansionRomAccess());
-		
+
 		// D000h System ROM / RAM / banked RAM
 		memoryLayout.assignNextBlock(0xd000, new UpperMemoryAccess());
-		
+
 		memoryLayout.completeBlock();
 
 	}
@@ -1225,7 +1266,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		return switchIteration;
 	}
 
-/*	
+/*
 	void putPeripheral( Cpu65c02* cpu, Monitor560x192* monitor, Speaker1bit* speaker, Keyboard2e* keyboard )
 	{
 		this->cpu = cpu;
@@ -1254,7 +1295,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 		accessCount = 0;
 		toggleMod = 0;
-		
+
 	}
 
 	Uint8 _randRead()
@@ -1277,7 +1318,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 	{
 
 		// Get/set cout settings
-		ios_base::fmtflags coutFlags = cout.flags();	
+		ios_base::fmtflags coutFlags = cout.flags();
 		cout << hex << uppercase << setfill ('0');
 
 		// Read main memory
@@ -1309,11 +1350,11 @@ public class MemoryBusIIe extends MemoryBus8 {
 		cout.flags(coutFlags);
 
 	}
-	
+
 	case 0xc019:
 		// Read VBL
 		return _randRead7bit() | (monitor->getVbl()<<7);
-		
-*/	
-	
+
+*/
+
 }
