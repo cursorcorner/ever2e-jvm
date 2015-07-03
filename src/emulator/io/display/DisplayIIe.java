@@ -1215,8 +1215,10 @@ public class DisplayIIe extends DisplayWindow {
 		frame.setVisible(true);
 		frame.setSize(XSIZE+(xOff<<1), YSIZE+(yOff<<1)+frame.getInsets().top);
 		frame.addKeyListener(keyboard);
+		frame.setFocusTraversalKeysEnabled(false);
 		canvas.repaint();
 		canvas.addKeyListener(keyboard);
+		canvas.setFocusTraversalKeysEnabled(false);
 	}
 
 	private class Canvas32x32 extends Canvas {

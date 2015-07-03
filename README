@@ -38,10 +38,8 @@ CPU with accurate cycle timing, synced with emulated monitor refresh rate
 Memory bus
 	missing paddle
 	missing cassette switches or stand-ins
-	missing vbl
 	need to swap outputs from video to keyboard out for 16 read types
 Text / graphics modes with accurate color and pixel offset
-Key input matching IIe behavior
-	key repeat not implemented
+Key input matches IIe behavior and timing
 Shift-insert or shift-F2 pastes contents of clipboard (can be cancelled with ctrl-reset or F12)
 Sound physics implemented

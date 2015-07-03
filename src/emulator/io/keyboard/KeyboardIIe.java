@@ -33,6 +33,11 @@ public class KeyboardIIe extends Keyboard {
 	private int keyCount;
 	private byte modIndex;
 	private boolean isHalted;
+	private int cycleCount;
+	private int delayCount;
+	
+	private static final int PRE_REPEAT_FLOP_COUNT = 11;
+	private static final int FLOP_DELAY_CYCLES = 4;
 	
 	private static final int KEY_MASK_CAPS = 0x00000001;
 	private static final int KEY_MASK_SHIFT = 0x00000002;
@@ -48,7 +53,6 @@ public class KeyboardIIe extends Keyboard {
 	private static final int KEY_MASK_F8 = 0x00008000;
 	private static final int KEY_MASK_F9 = 0x00010000;
 	private static final int KEY_MASK_F10 = 0x00020000;
-	private static final int KEY_MASK_F11 = 0x00040000;
 	private static final int KEY_MASK_F12 = 0x00080000;
 	private static final int KEY_EVENT_RESET_PRESS = 0x40040000;
 	private static final int KEY_EVENT_RESET_RELEASE = 0x80040000;
@@ -230,6 +234,7 @@ public class KeyboardIIe extends Keyboard {
 						keyCode = (byte) (0x80|keyCodeArray[modIndex]);
 					keyPressed.add((int) keyCodeArray[0]);
 					keyCount++;
+					delayCount = PRE_REPEAT_FLOP_COUNT;
 				}
 			}
 			
@@ -306,6 +311,8 @@ public class KeyboardIIe extends Keyboard {
 			if( isKeyPressed(newKeyCode) ) {
 				keyPressed.remove(newKeyCode);
 				keyCount--;
+				if( keyCount==0 )
+					delayCount = 0;
 			}
 			break;
 		
@@ -364,6 +371,17 @@ public class KeyboardIIe extends Keyboard {
 	public void cycle() throws HardwareException {
 
 		incSleepCycles(1);
+		cycleCount++;
+		
+		// Check for key-repeat
+		if( delayCount>0 && (keyCode&0x80)==0 && (cycleCount&(FLOP_DELAY_CYCLES-1))==0 && keyQueue.size()==0 ) {
+			delayCount--;
+			if( delayCount==0 ) {
+				delayCount = 1;
+				keyCode |= 0x80;
+			}
+		}
+		
 		Integer keyEvent = nextKeyEvent();
 		if( keyEvent==null )
 			return;
@@ -410,6 +428,8 @@ public class KeyboardIIe extends Keyboard {
 		keyEventQueue = new ConcurrentLinkedQueue<>();
 		keyQueue = new LinkedList<>();
 		isHalted = false;
+		cycleCount = 0;
+		delayCount = 0;
 	}
 
 }
