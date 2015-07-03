@@ -20,12 +20,11 @@ http://github.com/cursorcorner/ever2e-jvm
                                   KNOWN BUGS                                   
 -------------------------------------------------------------------------------
 
-HGR artifacts not completely accurate
 GR artifacts not completely accurate
 	seems to be immune to offset fragmentation in hardware tests
+Right horizontal scan line not matching up in 40-col modes
 Speaker static at startup
 Does not successfully pass IIe memory test
-Right horizontal scan line not matching up in 40-col modes
 Needs to reset keyboard when focus is regained to avoid stuck-keys
 
 

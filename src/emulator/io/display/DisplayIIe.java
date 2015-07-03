@@ -1358,6 +1358,7 @@ public class DisplayIIe extends DisplayWindow {
 			gfxWord = HGR_TO_DHGR[readValue&0x7f];
 			if( (readValue&0x80)!=0 ) {
 				gfxWord <<= 1;
+				gfxWord &= 0x3fff;
 				gfxWord |= shiftBit;
 			}
 			shiftBit = (gfxWord&0x2000)!=0 ? 1:0;
