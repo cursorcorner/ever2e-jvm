@@ -1251,12 +1251,10 @@ public class DisplayIIe extends DisplayWindow {
 		else
 			textMod = (flashToggle&0x10)!=0 ? 1:0;
 
-		// HIRES40M / LORES40M - Sather 8-22
-		// Sather does not fully indicate whether TEXT40 bytes always ignore bit 8 despite the status of AN3
-		// This could only be tested by changing Apple IIe character firmware, but it is possible that alternate,
-		//   hi-bit-set character sets would be shifted (red-blue) if AN3 was reset
-		// If AN3 does effect text shifting, this feature would be disabled by modes such as double-hi-res,
-		//   which reset the AN3 switch
+		// Notes on HIRES40M / LORES40M - Sather 8-22
+		// TEXT40 bytes read bit 7 when AN3 is off and hires mode is being used - Sather 8-41
+		// This is not currently implemented as replacing the video ROM with something that would use
+		//   this feature is not currently implemented
 		DisplayType displayTypeTop;
 		DisplayType displayTypeBottom;
 
@@ -1414,7 +1412,7 @@ public class DisplayIIe extends DisplayWindow {
 
 		}
 
-		colorWord |= gfxWord<<colorWordSize;
+		colorWord |= colorWordSize>=0 ? gfxWord<<colorWordSize : gfxWord>>-colorWordSize;
 		colorWordSize += 14;
 		if( xPaint==552 )
 			colorWordSize += 3;

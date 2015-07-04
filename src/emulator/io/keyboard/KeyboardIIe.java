@@ -18,6 +18,9 @@ import core.exception.HardwareException;
 
 public class KeyboardIIe extends Keyboard {
 
+	private static final boolean DEBUG = false;
+	private int xTestPos;
+	
 	private Cpu65c02 cpu;
 
 	private ConcurrentLinkedQueue<Integer> keyEventQueue = new ConcurrentLinkedQueue<>();
@@ -196,6 +199,14 @@ public class KeyboardIIe extends Keyboard {
 
 		int keyIndex = event.getKeyCode();
 		
+		if( DEBUG ) {
+			System.out.print(KeyEvent.getKeyText(keyIndex));
+			if( ++xTestPos==40 || keyIndex==10 ) {
+				System.out.println();
+				xTestPos=0;
+			}
+		}
+
 		switch( keyIndex ) {
 
 		// Modifiers
