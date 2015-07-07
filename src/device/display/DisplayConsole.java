@@ -1,7 +1,7 @@
-package emulator.io.display;
+package device.display;
 
 import core.exception.HardwareException;
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 public abstract class DisplayConsole extends HardwareManager {
 

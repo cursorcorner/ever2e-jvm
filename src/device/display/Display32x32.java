@@ -1,4 +1,4 @@
-package emulator.io.display;
+package device.display;
 
 import java.awt.Canvas;
 import java.awt.Color;
@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
 
 import core.exception.HardwareException;
 import core.memory.memory8.MemoryBus8;
-import emulator.io.keyboard.KeyboardIIe;
+import device.keyboard.KeyboardIIe;
 
 public class Display32x32 extends DisplayWindow {
 

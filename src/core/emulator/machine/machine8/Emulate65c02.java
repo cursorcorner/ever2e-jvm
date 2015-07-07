@@ -1,10 +1,10 @@
-package emulator.machine8;
+package core.emulator.machine.machine8;
 
 import java.util.PriorityQueue;
 
 import core.exception.HardwareException;
-import emulator.HardwareManager;
-import emulator.machine.Emulator;
+import core.emulator.HardwareManager;
+import core.emulator.machine.Emulator;
 
 public class Emulate65c02 extends Emulator {
 

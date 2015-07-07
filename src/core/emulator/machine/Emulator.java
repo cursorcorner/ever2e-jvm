@@ -1,9 +1,9 @@
-package emulator.machine;
+package core.emulator.machine;
 
 import java.util.PriorityQueue;
 
 import core.exception.HardwareException;
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 public class Emulator {
 

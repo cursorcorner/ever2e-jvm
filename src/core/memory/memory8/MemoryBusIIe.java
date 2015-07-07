@@ -1,8 +1,8 @@
 package core.memory.memory8;
 
 import core.exception.HardwareException;
-import emulator.io.display.DisplayIIe;
-import emulator.io.keyboard.KeyboardIIe;
+import device.display.DisplayIIe;
+import device.keyboard.KeyboardIIe;
 
 public class MemoryBusIIe extends MemoryBus8 {
 

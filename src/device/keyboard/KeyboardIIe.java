@@ -1,4 +1,4 @@
-package emulator.io.keyboard;
+package device.keyboard;
 
 import java.awt.Event;
 import java.awt.Toolkit;
@@ -19,8 +19,6 @@ import core.exception.HardwareException;
 
 public class KeyboardIIe extends Keyboard {
 
-	private static final boolean DEBUG = false;
-	
 	private Cpu65c02 cpu;
 
 	private ConcurrentLinkedQueue<Integer> keyEventQueue = new ConcurrentLinkedQueue<>();
@@ -200,8 +198,7 @@ public class KeyboardIIe extends Keyboard {
 		int keyIndex = event.getKeyCode();
 		int keyModifiers = event.getModifiers();
 		
-		if( DEBUG )
-			System.out.println(KeyEvent.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
+		//System.out.println(KeyEvent.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
 
 		// Workaround for shift mistaken as caps-key AWT bug
 		if( keyIndex==KeyEvent.VK_CAPS_LOCK && (keyModifiers&Event.SHIFT_MASK)!=0 )

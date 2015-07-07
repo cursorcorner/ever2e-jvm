@@ -1,4 +1,4 @@
-package emulator.io.speaker;
+package device.speaker;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -7,7 +7,7 @@ import javax.sound.sampled.SourceDataLine;
 
 import core.exception.HardwareException;
 import core.memory.memory8.MemoryBusIIe;
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 public class Speaker1Bit extends HardwareManager  {
 

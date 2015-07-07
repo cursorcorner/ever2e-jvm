@@ -4,7 +4,7 @@ import core.cpu.cpu8.Register.StatusRegister;
 import core.exception.HardwareException;
 import core.memory.memory8.MemoryBus8;
 import core.memory.memory8.MemoryBusIIe;
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 /* Copyright (C) 2012-2015 Shane Reilly
  * shane@cursorcorner.net

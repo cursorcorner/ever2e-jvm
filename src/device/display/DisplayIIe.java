@@ -1,4 +1,4 @@
-package emulator.io.display;
+package device.display;
 
 import java.awt.Canvas;
 import java.awt.Color;
@@ -12,9 +12,9 @@ import java.awt.image.BufferedImage;
 import core.exception.HardwareException;
 import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBusIIe;
-import emulator.io.display.display8.ScanlineTracer8;
-import emulator.io.display.display8.TraceMap8;
-import emulator.io.keyboard.KeyboardIIe;
+import device.display.display8.ScanlineTracer8;
+import device.display.display8.TraceMap8;
+import device.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow {
 

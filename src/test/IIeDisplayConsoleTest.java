@@ -3,8 +3,8 @@ package test;
 import org.junit.Before;
 import org.junit.Test;
 
-import emulator.io.display.DisplayIIe;
-import emulator.io.display.display8.ScanlineTracer8;
+import device.display.DisplayIIe;
+import device.display.display8.ScanlineTracer8;
 
 public class IIeDisplayConsoleTest {
 

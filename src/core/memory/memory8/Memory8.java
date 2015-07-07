@@ -3,7 +3,7 @@ package core.memory.memory8;
 import java.util.Arrays;
 
 import core.exception.HardwareException;
-import emulator.HardwareComponent;
+import core.emulator.HardwareComponent;
 
 public class Memory8 implements HardwareComponent {
 

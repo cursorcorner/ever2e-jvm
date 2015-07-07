@@ -9,7 +9,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 
 import core.exception.HardwareException;
-import emulator.io.keyboard.KeyboardIIe;
+import device.keyboard.KeyboardIIe;
 
 public class VideoTest {
 

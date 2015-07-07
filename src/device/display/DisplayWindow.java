@@ -1,6 +1,6 @@
-package emulator.io.display;
+package device.display;
 
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 public abstract class DisplayWindow extends HardwareManager {
 

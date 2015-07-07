@@ -1,6 +1,6 @@
-package emulator.io.display.display8;
+package device.display.display8;
 
-import emulator.HardwareComponent;
+import core.emulator.HardwareComponent;
 
 public class ScanlineTracer8 implements HardwareComponent {
 

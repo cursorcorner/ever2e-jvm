@@ -1,4 +1,4 @@
-package emulator;
+package core.emulator;
 
 import core.exception.HardwareException;
 

@@ -1,4 +1,4 @@
-package emulator.io.keyboard;
+package device.keyboard;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import emulator.HardwareManager;
+import core.emulator.HardwareManager;
 
 public abstract class Keyboard extends HardwareManager implements KeyListener {
 

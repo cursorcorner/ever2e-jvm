@@ -2,7 +2,7 @@ package core.memory.memory8;
 
 import java.util.Random;
 
-import emulator.io.keyboard.Keyboard;
+import device.keyboard.Keyboard;
 
 public class MemoryBusDemo8 extends MemoryBus8 {
 

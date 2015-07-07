@@ -1,4 +1,4 @@
-package emulator.machine8;
+package core.emulator.machine.machine8;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -15,16 +15,16 @@ import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBus8;
 import core.memory.memory8.MemoryBusDemo8;
 import core.memory.memory8.MemoryBusIIe;
-import emulator.HardwareManager;
-import emulator.Program;
-import emulator.Program.MachineLayoutType;
-import emulator.io.display.Display32x32;
-import emulator.io.display.Display32x32Console;
-import emulator.io.display.DisplayConsoleDebug;
-import emulator.io.display.DisplayIIe;
-import emulator.io.keyboard.KeyboardIIe;
-import emulator.io.speaker.Speaker1Bit;
-import emulator.machine.Emulator;
+import core.emulator.HardwareManager;
+import core.emulator.Program;
+import core.emulator.Program.MachineLayoutType;
+import device.display.Display32x32;
+import device.display.Display32x32Console;
+import device.display.DisplayConsoleDebug;
+import device.display.DisplayIIe;
+import device.keyboard.KeyboardIIe;
+import device.speaker.Speaker1Bit;
+import core.emulator.machine.Emulator;
 
 public class Emulator8Coordinator {
 

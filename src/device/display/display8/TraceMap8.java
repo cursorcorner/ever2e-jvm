@@ -1,4 +1,4 @@
-package emulator.io.display.display8;
+package device.display.display8;
 
 public class TraceMap8 {
 

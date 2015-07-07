@@ -9,7 +9,7 @@ import javax.swing.JTextArea;
 import javax.swing.text.DefaultEditorKit;
 
 import core.exception.HardwareException;
-import emulator.io.keyboard.KeyboardIIe;
+import device.keyboard.KeyboardIIe;
 
 public class KeyboardTest extends JFrame {
 

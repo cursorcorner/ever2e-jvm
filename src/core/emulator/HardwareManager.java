@@ -1,4 +1,4 @@
-package emulator;
+package core.emulator;
 
 import java.util.Random;
 

@@ -1,4 +1,4 @@
-package emulator.io.display;
+package device.display;
 
 import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
